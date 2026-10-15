@@ -9,8 +9,17 @@
 \usepackage{/home/aglaia/Documents/latex-setup/packages/title}
 
 \usepackage{etoolbox}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 
-\setuniversity{TU Wien}
+\algrenewcommand\algorithmicwhile{\textcolor{blue}{while}}
+\algrenewcommand\algorithmicdo{\textcolor{blue}{do}}
+\algrenewcommand\algorithmicend{\textcolor{blue}{end}}
+\algrenewcommand\algorithmicif{\textcolor{blue}{if}}
+\algrenewcommand\algorithmicthen{\textcolor{blue}{then}}
+\algrenewcommand\algorithmicfor{\textcolor{blue}{for}}
+
+\setuniversity{Technische Universität Wien}
 \setcoursename{Computer-Aided Verification}
 \setcoursebook{slides}
 \setauthorname{aglaia norza}
@@ -26,7 +35,7 @@
 \makeatletter
 \patchcmd{\makecustomcover}
   {\end{tikzpicture} \par}
-{\end{tikzpicture} \par \vspace{-0.5em}{\small\textcolor{chaptergray}{meme translation: "an engineer's carreer: 1) uni life 2) first steps in the job market 3) [whatever that is] 4) surface-to-air missile builder for Leonardo S.p.A (famous italian defense company with very dubious ethics)"}} \par}
+{\end{tikzpicture} \par \vspace{-0.5em}{\small\textcolor{chaptergray}{meme translation: ``an engineer's carreer: 1) uni life 2) first steps in the job market 3) [whatever that is] 4) surface-to-air missile builder for Leonardo S.p.A (famous italian defense company with very dubious ethics)''}} \par}
   {}{}
 \makeatother
 
@@ -151,5 +160,106 @@ Verification models differ based on whether they target hardware or software.
     \item \textbf{Concurrent Protocols (software):} standard assumptions include that processes run \textbf{asynchronously} (interleave), the scheduler is completely non-deterministic, and individual statements execute atomically; examples include threads accessing shared variables (requiring mutual exclusion algorithms like Peterson's)
     \item \textbf{Hardware Protocols:} standard assumptions include that components run \textbf{synchronously} based on a global clock (every component makes a step at a time) and communicate via actions or shared memory; examples include cache coherence protocols like MSI (Modified-Shared-Invalid)
 \end{itemize}
+
+\chapter{Temporal Logics and Model Checking}
+
+\begin{defframe}{Finite-State Transition System}{}
+    A triple $(S, T, I)$ is a \textbf{Finite-State Transition System} if 
+    \begin{itemize}
+        \item $S$ is a finite set of states
+        \item $I \subseteq S$ is a set of initial states
+        \item $T \subseteq S \times S$ is a \textit{total} transition relation ($\forall s \in S. \exists s' \in S . T(s, s')  $)
+    \end{itemize}
+\end{defframe}
+
+\begin{defframe}{Kripke Structure}{}
+    A quadruple $(S, T, I, L)$ is a \textbf{Kripke Structure} if 
+    \begin{itemize}
+        \item $(S, T, I, L)$ is a finite-state transition system
+        \item $L$ is a labelling function $S \to 2^{AP}$(from states to atomic propositions)
+    \end{itemize}
+\end{defframe}
+
+Atomic propositions are used to represent properties of states, which can be combined them to generate \textit{assertions}.
+
+We can check whether an assertion holds in a given state via the standard $\vDash$ relation - we write $s \vDash F$ if $F$ holds in state $s$:
+\begin{itemize}
+    \item $s \vDash p \iff p \in L(s)$
+    \item $s \not\vDash F \iff p \not\in L(s)$ (!! closed world assumption - anything not explicitly defined as true in $L(s)$ is evaluated as false)
+    \item $s \vDash F_{1} \lor F_{2} \iff s \vDash F_{1}\text{ or } s \vDash F_{2}$
+    \item $s \vDash F_{1} \land  F_{2} \iff s \vDash F_{1}\text{ and } s \vDash F_{2}$
+\end{itemize}
+
+Assertions can be used to express that something bad is not supposed to happen (\textit{safety} properties).
+
+For example, if we had a traffic light system, we could write $\mathtt{assert}(\neg \textcolor{OliveGreen}{\mathtt{green_{1}}} \lor \neg \textcolor{OliveGreen}{\mathtt{green_{2}}})$ to signify that traffic lights \texttt{1} and \texttt{2} cannot be green at the same time.
+
+\section{Explicit-State Model Checking of Assertions}
+To algorithmically verify if a system design is correct, we can use \textbf{explicit-state model checking}. This technique systematically enumerates all reachable states of a finite-state transition system, starting from the initial states $I$ and following the transition relation $T$, to verify whether a specified property or assertion $F$ holds in every reachable state. The two primary search strategies used to explicitly traverse and evaluate this state space are Depth-First Search (DFS) and Breadth-First Search (BFS).
+
+\noindent
+\begin{minipage}[t]{0.48\textwidth}
+\textbf{Depth-First Search (DFS)} \\
+\textbf{Algorithm} \textsc{ExplicitReachDFS}
+\begin{algorithmic}[1]
+\State $open \gets \text{list}(I)$
+\State $visited \gets \emptyset$
+\While{$open \neq []$}
+    \State $s \gets \text{head}(open)$
+    \State $open \gets \text{tail}(open)$
+    \If{$s \not\models F$} 
+        \State \textcolor{red}{error}(s)
+    \EndIf
+    \For{\textcolor{blue}{each} $s' \in S : (s,s') \in T$}
+        \If{$s' \notin visited$}
+            \State $visited \gets \{s'\} \cup visited$
+            \State $open \gets s' \mathbin{::} open$ \Comment{prepend}
+        \EndIf
+    \EndFor
+\EndWhile
+\end{algorithmic}
+
+\vspace{1cm}
+\begin{itemize}
+    \item keeps only the current stack (\(|\text{open}| < |S|\)): considered more memory-efficient
+    \item counterexamples can be quite long
+\end{itemize}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\textbf{Breadth-First Search (BFS)} \\
+\textbf{Algorithm} \textsc{ExplicitReachBFS}
+\begin{algorithmic}[1]
+\State $open \gets \text{list}(I)$
+\State $visited \gets \emptyset$
+\While{$open \neq []$}
+    \State $s \gets \text{head}(open)$
+    \State $open \gets \text{tail}(open)$
+    \If{$s \not\models F$} 
+        \State \textcolor{red}{error}(s)
+    \EndIf
+    \For{\textcolor{blue}{each} $s' \in S : (s,s') \in T$}
+        \If{$s' \notin visited$}
+            \State $visited \gets \{s'\} \cup visited$
+            \State $open \gets \text{append}(open, s')$ \Comment{append}
+        \EndIf
+    \EndFor
+\EndWhile
+\end{algorithmic}
+
+\vspace{0.5cm}
+\begin{itemize}
+    \item queue grows very large due to frontier size: consumes significantly more memory
+    \item always finds the shortest counterexample
+\end{itemize}
+\end{minipage}
+
+But assertions only allow us to make sure that nothing bad happens: what if we want to guarantee that something \textit{good} happens?
+
+We need to extend our specification language to consider \textbf{temporal logics}.
+
+\section{Temporal Logics}
+
+
 
 \end{document}
