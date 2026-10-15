@@ -494,7 +494,161 @@ For each assigned variable, we store a tuple \texttt{(Value, Decision Level, Rea
 \end{itemize}
 \end{gframe}
 
+\begin{cframe}{ColorDarkDef}{Exercise: how to read the graph}
+\begin{center}
+\begin{tikzpicture}[>=stealth, thick, x=2.2cm, y=1.2cm, scale=0.75, transform shape]
+    \node (a) at (2, 0) {$a = 1 @ 0$};
+    \node (b) at (5, 0) {$b = 1 @ 0$};
+    \node at (0.5, 0) {\small top-level};
+
+    \node (c) at (0, -1.5) {$c = 1 @ 1$};
+    \node[text=magenta] (d) at (2, -1.5) {$d = 1 @ 1$};
+    \node (e) at (5, -1.5) {$e = 1 @ 1$};
+    \node at (0, -0.75) {\small decision};
+
+    \node (f) at (0, -3) {$f = 1 @ 2$};
+    \node[text=magenta] (g) at (2, -3) {$g = 1 @ 2$};
+    \node (h) at (5, -3) {$h = 1 @ 2$};
+    \node (i) at (7, -3) {$i = 1 @ 2$};
+
+    \node (k) at (0, -4.5) {$k = 1 @ 3$};
+    \node (l) at (2, -4.5) {$l = 1 @ 3$};
+
+    \node (r) at (0, -6) {$r = 1 @ 4$};
+    \node[text=magenta] (s) at (2, -6) {$s = 1 @ 4$};
+    \node[text=magenta] (t) at (5, -6) {$t = 1 @ 4$};
+    \node (y) at (7, -6) {$y = 1 @ 4$};
+    
+    \node (x) at (2, -7.5) {$x = 1 @ 4$};
+    \node (z) at (5, -7.5) {$z = 1 @ 4$};
+    \node (kappa) at (7, -7.5) {$\kappa$};
+    \node[right of=kappa, xshift=-0.5cm] {\small conflict};
+
+    \draw[dashed, gray] (-0.5, -0.75) -- (8, -0.75);
+    \draw[dashed, gray] (-0.5, -2.25) -- (8, -2.25);
+    \draw[dashed, gray] (-0.5, -3.75) -- (8, -3.75);
+    \draw[dashed, gray] (-0.5, -5.25) -- (8, -5.25);
+
+    \draw[->] (a) -- (d);
+    \draw[->] (b) -- (e);
+    \draw[->] (c) -- (d);
+    \draw[->] (d) -- (e);
+
+    \draw[->] (f) -- (g);
+    \draw[->] (d) -- (g);
+    \draw[->] (e) -- (h);
+    \draw[->] (g) -- (h);
+    \draw[->] (h) -- (i);
+
+    \draw[->] (k) -- (l);
+    \draw[->] (g) -- (l);
+
+    \draw[->] (r) -- (s);
+    \draw[->] (l) -- (s);
+    
+    \draw[->, magenta] (d) -- (t);
+    \draw[->, magenta] (g) -- (t);
+    \draw[->, magenta] (s) -- (t);
+    
+    \draw[->] (i) -- (y);
+    \draw[->] (t) -- (y);
+    \draw[->] (s) -- (x);
+    \draw[->] (x) -- (z);
+    \draw[->] (t) -- (z);
+    
+    \draw[->] (y) -- (kappa);
+    \draw[->] (z) -- (kappa);
+
+    \node[text=magenta] at (3.5, -9) {\large $d \land g \land s \rightarrow t \quad \equiv \quad (\overline{d} \lor \overline{g} \lor \overline{s} \lor t)$};
+
+\end{tikzpicture}
+\end{center}
+Implication graphs allow us to trace the causes of variable assignments and conflicts.
+
+\begin{enumerate}
+    \item \textbf{Finding the cause of an assignment (the antecedent):}
+    \begin{itemize}
+        \item locate the node $n$ whose assignment you want to analyze
+        \item trace its incoming edges (look at the arrows pointing into $n$); let's say they come from nodes $a$, $b$, and $c$
+        \item reconstruct the underlying clause: the edges imply that $a \land b \land c \to n$; converting this implication into standard CNF format gives us: $\neg a \lor \neg b \lor \neg c \lor n$
+    \end{itemize}
+    
+    \item \textbf{Finding the conflicting clause for a conflict node ($\kappa$):}
+    \begin{itemize}
+        \item the same logic applies, but the implication has no consequent (it implies a contradiction/false)
+        \item trace the incoming edges to $\kappa$ (e.g., from nodes $x$ and $y$)
+        \item simply negate these parent nodes and connect them with disjunctions; the clause that caused the conflict is $\neg x \lor \neg y$
+    \end{itemize}
+\end{enumerate}
+
+\end{cframe}
+
 \subsection{Clause Learning}
+To help us decide where to backjump to, and to learn more from a found conflict, we can add \textbf{clause learning} to our algorithm.
+
+Whenever we encounter a conflict clause, we can add it to the formula: the literals contributing to a conflict form a partial assignment, which is just a conjunction of literals, whose negation is a clause that is \textit{implied by the original CNF}. Therefore, adding this clause prevents the partial assignment from happening again during the search.
+
+\begin{gframe}{Finding cuts in the graph}
+    A visual way to see this is to imagine it as finding cuts in the implication graph. We can draw a \textbf{cut} through the implication graph that separates the decision variables (roots) from the conflict node $\kappa$ (leaf).
+
+However, not all cuts are useful. There are two extremes we want to avoid:
+
+\begin{itemize}
+\item the decision cut (closest to roots)
+    \begin{itemize}
+        \item  results in a disjunction of all the negated decisions that led to the conflict
+        \item it is usually very long and provides almost no new information: it essentially just tells the solver, ``don't make this exact combination of guesses again,'' which does not help prune the remaining search space efficiently
+    \end{itemize}
+
+    \item the conflict cut (closest to leaf):
+    \begin{itemize}
+        \item results in the exact clause that was just falsified to cause the conflict
+        \item gives no new information: the solver already has this clause in its original formula database
+    \end{itemize}
+\end{itemize}
+
+Because the decision cut is too broad (weak) and the conflict cut is redundant, modern CDCL solvers look for a cut in the middle of the graph. The goal is to find a cut that produces a \textbf{short} clause (because shorter clauses restrict the search space more heavily) and contains \textbf{novel information} not explicitly written in the original formula. 
+\end{gframe}
+
+\subsection*{Unique Implication Points (UIPs) and Asserting Clauses}
+
+To find the optimal cut in an implication graph, modern solvers rely on finding a "bottleneck" that forces the conflict. This bottleneck is called a Unique Implication Point.
+
+\begin{defframe}{Unique Implication Point (UIP)}{}
+ A node in the implication graph at the \textit{current} decision level $d$ is a UIP if \textit{every path} from the decision variable at level $d$ to the conflict node $\kappa$ must pass through it.
+\begin{itemize}
+    \item in graph theory, a UIP is known as a \textbf{dominator} of the conflict node with respect to the decision node
+    \item (it represents a single, unavoidable consequence at the current decision level that triggered the conflict; if you remove the UIP, the conflict cannot happen)
+\end{itemize}
+        \begin{gframe}{Nota Bene}
+The decision variable itself is \textit{always} trivially a UIP, because all paths at the current level originate from it.
+        \end{gframe}
+\end{defframe}
+
+Because there can be multiple UIPs in a single implication graph (e.g., the decision variable, and several intermediate forced variables), we must choose for our cut.
+
+The best one to choose is almost always the \textbf{First UIP}, i.e. the one \textit{closest to the conflict node} $k$.
+
+\begin{gframe}{Why the First UIP?}
+        \begin{itemize}
+        \item \textit{Locality:} it captures the most recent, localized reasons for the conflict, making the resulting learned clause highly relevant to the current search space
+        \item \textit{Efficiency:} the algorithm to find the 1UIP works backward from the conflict; stopping at the \textit{first} UIP we encounter is computationally faster than resolving all the way back to the decision variable
+    \end{itemize}
+\end{gframe}
+
+When we perform resolution backward from the conflict and stop at the First UIP, the resulting learned clause is called an \textbf{Asserting Clause}. 
+
+\begin{defframe}{Asserting Clause}{}
+ A conflict clause that contains \textit{exactly one literal from the current decision level} (which is the negation of the UIP node). All other literals in the clause come from earlier, lower decision levels.
+\end{defframe}
+
+    This structural property of the asserting clause makes non-chronological backjumping work perfectly:
+    \begin{itemize}
+        \item when we learn an asserting clause, we look at the decision levels of its literals and backjump to the \textbf{second-highest decision level} present in the clause
+        \item because the clause only had \textit{one} literal from the highest level, backjumping clears that assignment
+        \item upon arriving at the second-highest level, \textbf{every literal in the learned clause evaluates to False, except for one} (the UIP literal, which is now unassigned)
+        \item this immediately triggers Boolean Constraint Propagation; the learned clause \textit{asserts} the forced assignment of the UIP literal, driving the solver forward without needing a new blind guess
+\end{itemize}
 
 
 

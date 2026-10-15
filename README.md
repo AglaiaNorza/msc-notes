@@ -1,4 +1,4 @@
-the collection of my notes for the msc Logic and AI at TU Wien ! 
+the collection of my notes for the MSc Logic and AI at TU Wien ! 
 
 | course | status |
 |--- | ---|
