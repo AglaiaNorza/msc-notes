@@ -1,0 +1,235 @@
+%! TEX program = xelatex
+\documentclass[a4paper, 11pt]{report} 
+
+\usepackage{/home/aglaia/Documents/latex-setup/packages/packs}
+\usepackage{/home/aglaia/Documents/latex-setup/packages/macros}
+\usepackage{/home/aglaia/Documents/latex-setup/packages/mainstyle} 
+\usepackage{/home/aglaia/Documents/latex-setup/packages/colors}    
+\usepackage{/home/aglaia/Documents/latex-setup/packages/frameboxes} 
+\usepackage{/home/aglaia/Documents/latex-setup/packages/title}
+
+\usepackage{bussproofs}
+
+\setuniversity{Sapienza Università di Roma}
+\setcoursename{FORSYTE}
+\setcoursebook{slides}
+\setauthorname{aglaia norza}
+\setauthoremail{norzaglaia@gmail.com}
+\setauthorgithub{AglaiaNorza}
+\setcoverphoto{} 
+
+\begin{document}
+
+\makecustomcover
+
+\tableofcontents
+\clearpage
+
+\chapter{Satisfiability in Formal Methods}
+
+\section{The SAT Decision Problem}
+
+\begin{defframe}{The SAT decision problem}{}
+    Given a propositional formula in conjunctive normal form, is there a truth assignment to the Boolean variables such that it satisfies all clauses?
+\end{defframe}
+
+SAT is an \textit{NP-complete} problem, and it's a very active research area.
+
+\section{Formula transformation}
+
+We have that
+\begin{itemize}
+    \item every formula can be transformed into an \textbf{equivalent} CNF formula with, in the worst case, an exponential increase in size
+    \item every formula can be transformed into an \textbf{equisatisfiable} formula with a \textit{linear} increase in size (by introducing new variables for subformulae)
+\end{itemize}
+
+\begin{cframe}{ColorLemma}{Tseitin's transformation}
+    \vspace{-1em}
+\begin{enumerate}
+    \item introduce a fresh boolean variable for every connective
+    \item encode each equivalence as a set of clauses
+    \item collect all constraints in a big conjunction and enforce the variable representing the entire formula to be true
+\end{enumerate}
+\end{cframe}
+
+\paragraph{Example.}
+Consider the following propositional formula:
+\begin{equation*}
+\Phi = (a \land (a \lor b)) \lor \neg(a \lor b)
+\end{equation*}
+First, we break the formula down into an Abstract Syntax Tree (AST) and identify every unique operation, and we then assign a new variable to each (non-atomic) subformula:
+
+
+\noindent
+\begin{minipage}{0.45\textwidth}
+\begin{align*}
+t_0 &\leftrightarrow (t_1 \lor t_3) \\
+t_1 &\leftrightarrow (a \land t_2) \\
+t_2 &\leftrightarrow (a \lor b) \\
+t_3 &\leftrightarrow \neg t_4 \\
+t_4 &\leftrightarrow (a \lor b) 
+\end{align*}
+\end{minipage}%
+\hfill
+\begin{minipage}{0.5\textwidth}
+\centering
+\begin{tikzpicture}[
+    scale=0.75, transform shape,
+    level distance=1.2cm,
+    level 1/.style={sibling distance=3.5cm},
+    level 2/.style={sibling distance=1.5cm},
+    level 3/.style={sibling distance=1.5cm},
+    every node/.style={align=center}
+  ]
+  
+  \node {$\lor \quad (t_0)$}
+    child {node {$\land \quad (t_1)$}
+      child {node {$a$}}
+      child {node {$\lor \quad (t_2)$}
+        child {node {$a$}}
+        child {node {$b$}}
+      }
+    }
+    child {node {$\neg \quad (t_3)$}
+      child {node {$\lor \quad (t_4)$}
+        child {node {$a$}}
+        child {node {$b$}}
+      }
+    };
+\end{tikzpicture}
+\end{minipage}
+
+\vspace{0.5em}
+We translate each of these equivalences into standard CNF clauses via:
+\begin{itemize}
+    \item AND $X \leftrightarrow (Y \land Z)$: \\
+    $\equiv (\neg X \lor Y) \land (\neg X \lor Z) \land (X \lor \neg Y \lor \neg Z)$
+    
+    \item OR $X \leftrightarrow (Y \lor Z)$: \\
+    $\equiv (\neg X \lor Y \lor Z) \land (X \lor \neg Y) \land (X \lor \neg Z)$
+    
+    \item NOT $X \leftrightarrow \neg Y$: \\
+    $\equiv (\neg X \lor \neg Y) \land (X \lor Y)$
+\end{itemize}
+
+Finally, to assert that the entire formula $\Phi$ is true, we assert the root variable ($t_0$) as a unit clause, and join it with the CNF encodings of all the subformulae:
+\begin{align*}
+CNF(\Phi) =\; & t_0 \land (t_0 \leftrightarrow (t_1 \lor t_3)) \land (t_1 \leftrightarrow (a \land t_2)) \land (t_2 \leftrightarrow (a \lor b)) \land \\
+& (t_3 \leftrightarrow \neg t_4) \land (t_4 \leftrightarrow (a \lor b))
+\end{align*}
+
+We get the fully expanded CNF formula:
+\begin{align*}
+CNF(\Phi) =\; & t_0 \land \\
+& (\neg t_0 \lor t_1 \lor t_3) \land (t_0 \lor \neg t_1) \land (t_0 \lor \neg t_3) \land \\
+& (\neg t_1 \lor a) \land (\neg t_1 \lor t_2) \land (t_1 \lor \neg a \lor \neg t_2) \land \\
+& (\neg t_2 \lor a \lor b) \land (t_2 \lor \neg a) \land (t_2 \lor \neg b) \land \\
+& (\neg t_3 \lor \neg t_4) \land (t_3 \lor t_4) \land \\
+& (\neg t_4 \lor a \lor b) \land (t_4 \lor \neg a) \land (t_4 \lor \neg b)
+\end{align*}
+
+This resulting formula is equisatisfiable to the original $\Phi$.
+
+
+\begin{cframe}{ColorThm}{Plasted-Greenbaum's transformation}
+ Every direction in the Tseitin encoding can be replaced by $\to $ or $\leftarrow $, where the direction of the implication depends on the \textit{polarity} of the formula
+        \begin{itemize}
+            \item for every occurrence of a subformula $\varphi$, the polarity is $+$ if the number of negations above $\varphi$ in the syntax tree is even, and $-$ otherwise
+            \item we add $t_{i} \to $ if the polarity of $t_{i}$ is positive, and $\leftarrow t_{i}$ otherwise
+            \item so, every $\to $ and $\leftarrow $ can be replaced by at most two clauses
+        \end{itemize}
+\end{cframe}
+
+\section{Resolution}
+The theory underlying SAT solving is propositional resolution.
+
+\begin{defframe}{Resolution}{}
+The resolution rule is:
+\vspace{-1em}
+\begin{prooftree}
+    \AxiomC{$C \cup \{v\}$}
+    \AxiomC{$D \cup \{ \neg  v\}$}
+    \BinaryInfC{$C \cup D$}
+\end{prooftree}
+Which tells us that resolving the clause $C \cup \{v\}$ with the clause $D \cup \{\neg v\}$ results in the resolvant clause $D \cup C$.
+
+We also have a \textbf{unit-resolution} rule (or \textbf{BCP}, boolean constraint propagation). This rule can be used on so-called \textit{unit clauses}, clauses with a single literal, which needs to be assigned to $\top$ in a CNF.
+
+\begin{prooftree}
+    \AxiomC{$C \cup \{\neg v\}$}
+    \AxiomC{$\{v\}$}
+    \RightLabel{\quad $\{I, \neg I\} \cap C = \emptyset$}
+    \BinaryInfC{$C$}
+\end{prooftree}
+\begin{gframe}{NB!!}
+    This rule is \textit{not refutation-complete}, but  it can be applied in time \textit{linear} to the size of the formula.
+\end{gframe}
+\end{defframe}
+
+With the unit-resolution rule, we can do \textbf{Unit Propagation}: when a unit resolution produces a unit clause, the unit-resolution step can be repeated with the new clause (until fixpoint).
+
+\begin{cframe}{ColorLemma}{BCP algorithm}
+    \begin{itemize}
+        \item find a unit clause $I$
+        \item remove all the clauses in which $I$ occurs
+        \item remove all literals $\neg I$ in clauses
+        \item repeat
+    \end{itemize}
+\end{cframe}
+
+\paragraph{Example}
+We want to check the validity of:
+$$a \land b \to (a \leftrightarrow b)$$
+
+To check validity, we must check unsatisfiability of the negated formula.
+\begin{enumerate}
+    \item CNF of negated formula:
+    \begin{align*}
+    & \neg(a \land b \to (a \leftrightarrow b)) \\
+    \equiv\ & a \land b \land \neg(a \leftrightarrow b) \\
+    \equiv\ & a \land b \land \neg((\neg a \lor b) \land (a \lor \neg b)) \\
+    \equiv\ & a \land b \land (\neg(\neg a \lor b) \lor \neg(a \lor \neg b)) \\
+    \equiv\ & a \land b \land ((a \land \neg b) \lor (\neg a \land b)) \\
+    \equiv\ & a \land b \land (a \lor \neg a) \land (a \lor b) \land (\neg b \lor \neg a) \land (\neg b \lor b) \\
+    \equiv\ & a \land b \land (a \lor b) \land (\neg a \lor \neg b)
+    \end{align*}
+
+    \item Unit resolution on $a$ with $(\neg a \lor \neg b)$ \\
+    $$a \land b \land (a \lor b) \land (\neg a \lor \neg b) \land (\neg b)$$
+
+    \item Unit propagation:
+    $$b \land (\neg b)$$
+
+    \item Unit resolution on $b$ with $(\neg b)$ \\
+        $$\text{empty clause}\bot$$
+\end{enumerate}
+The negation is UNSAT, therefore the original formula is valid.
+
+\section{The DPLL Algorithm}
+The DPLL (Davis-Putnam-Logemann-Loveland) algorithm followed the DP (Davis-Putnam) algorithm. Where the first eliminated variables via full resolution, causing an explosion in memory, DPLL branches on variable values, trading memory for execution time (DPLL runs in polynomial space, at the cost of a worst case exponential runtime).
+
+
+\begin{cframe}{ColorLemma}{DPLL algorithm}
+    \begin{itemize}
+        \item apply repeated unit resolution and removal of subsumed clauses
+            \subitem \textcolor{gray}{at this point, any literals have been removed and the other clauses have been ``cleaned up''}
+        \item if $\emptyset \in F$, return UNSAT
+        \item if $F = \emptyset$ (no clauses left), return SAT
+        \item choose a new variable $x$ (using a decision heuristic), and branch on it:
+            \begin{itemize}
+                \item add $\{x\}$ and recursively solve
+                \item add $\{\neg x\}$ and recursively solve
+            \end{itemize}
+        \item if one of the branches returns SAT, return SAT
+        \item otherwise, return UNSAT
+    \end{itemize}
+
+\end{cframe}
+
+
+
+\section{Clause-Driven Conflict Learning}
+
+
+
+\end{document}
