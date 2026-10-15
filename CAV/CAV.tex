@@ -1,0 +1,155 @@
+%! TEX program = xelatex
+\documentclass[a4paper, 11pt]{report} 
+
+\usepackage{/home/aglaia/Documents/latex-setup/packages/packs}
+\usepackage{/home/aglaia/Documents/latex-setup/packages/macros}
+\usepackage{/home/aglaia/Documents/latex-setup/packages/mainstyle} 
+\usepackage{/home/aglaia/Documents/latex-setup/packages/colors}    
+\usepackage{/home/aglaia/Documents/latex-setup/packages/frameboxes} 
+\usepackage{/home/aglaia/Documents/latex-setup/packages/title}
+
+\usepackage{etoolbox}
+
+\setuniversity{TU Wien}
+\setcoursename{Computer-Aided Verification}
+\setcoursebook{slides}
+\setauthorname{aglaia norza}
+\setauthoremail{norzaglaia@gmail.com}
+\setauthorgithub{AglaiaNorza}
+
+\setcoverphoto{cover-meme}
+
+\setcoverwidth{0.5\textwidth}
+\setcoverheight{0.6\textwidth}
+\setbeforespace{0em}
+\setafterspace{0em}
+\makeatletter
+\patchcmd{\makecustomcover}
+  {\end{tikzpicture} \par}
+{\end{tikzpicture} \par \vspace{-0.5em}{\small\textcolor{chaptergray}{meme translation: "an engineer's carreer: 1) uni life 2) first steps in the job market 3) [whatever that is] 4) surface-to-air missile builder for Leonardo S.p.A (famous italian defense company with very dubious ethics)"}} \par}
+  {}{}
+\makeatother
+
+\begin{document}
+
+\makecustomcover
+
+\tableofcontents
+\clearpage
+
+\chapter{Introduction}
+
+\section{Verification \& Validation}
+Software and integrated circuits are pervasive, and a huge effort is spent on verification and validation (V\&V). Approximately 50\% of software development time and 35\% of hardware development time is dedicated to these tasks. The core goal of Computer-Aided Verification (CAV) is either to formally establish the correctness of a system or to find bugs.
+
+\section{Model Checking Basics}
+
+\begin{defframe}{Transition Systems}{}
+Programs and circuits are modeled as \textbf{transition systems}.
+\begin{itemize}
+    \item \textbf{States ($S$):} represent configurations, such as program counter values ($pc$) and variable assignments.
+    \item \textbf{Transitions ($T$):} define how states change, essentially capturing the operational semantics of the system by mapping current states to next states ($s \to s'$).
+\end{itemize}
+\end{defframe}
+
+A formal model checking problem can consist of:
+\begin{itemize}
+    \item starting states ($i$): the initial configurations of the system;
+    \item transitions ($t$): the allowable state updates;
+    \item bad states ($\neg p$): states that violate the specification;
+\end{itemize}
+
+Violations of specifications are witnessed by a \textbf{counterexample}.
+
+
+\begin{gframe}{Safety vs Liveness violations}
+\begin{itemize}
+    \item \textbf{Safety violation:} a counterexample consisting of a path of \textit{finite length} that reaches a bad state.
+    \begin{itemize}
+        \item example: "two intersecting traffic lights must never be green at the same time"
+        \subitem counterexample: a finite path where the North-South light turns green, a timer glitches, and the East-West light also turns green - the path ends the moment this bad state is reached
+    \end{itemize}
+    \item \textbf{Liveness violation:} a counterexample consisting of a path of \textit{infinite length} that repeatedly visits bad states and never reaches a good state.
+    \begin{itemize}
+        \item example: "if a pedestrian presses the crosswalk button, the walk signal will eventually turn green"
+        \subitem counterexample: an infinite loop where the pedestrian presses the button, but the traffic lights never turn green
+    \end{itemize}
+\end{itemize}
+\end{gframe}
+
+To properly define "bad" or "good" states, engineers verify systems against formal specifications written in \textbf{Temporal Logic}. This replaces natural language requirements with precise mathematical constraints (e.g., $GFp \to G(Gq \vee Fr)$).
+
+\section{The State-Space Explosion Problem}
+The main challenge in model checking is the exponential growth of possible states.
+
+\begin{gframe}{Sources of state explosion}
+\begin{itemize}
+    \item \textbf{Data:} enumerating large domains of values, including user inputs;
+    \item \textbf{Concurrency:} enumerating all possible process and thread interleaving schedules;
+    \item \textbf{Environment:} enumerating all possible states of the execution environment;
+    \item \textbf{Faults:} faulty processes that may feed others with junk data;
+\end{itemize}
+\end{gframe}
+
+\subsection{Remedies}
+To mitigate state-space explosion, several techniques are utilized:
+\begin{itemize}
+    \item \textbf{Abstraction:} mapping concrete values into a coarser, smaller domain;
+    \item \textbf{Symbolic techniques:} using Binary Decision Diagrams (BDDs), boolean satisfiability solvers (SAT), and satisfiability-modulo-theory (SMT) solvers to handle sets of states;
+    \item \textbf{Partial order reduction:} avoiding the exploration of states via "redundant paths";
+    \item \textbf{Symmetry reduction:} avoiding the exploration of symmetric states;
+\end{itemize}
+
+\section{Symbolic Model Checking}
+Instead of exploring states one by one (explicit state model checking), symbolic model checking processes sets of states simultaneously.
+
+\begin{itemize}
+    \item \textbf{Sets of States} are epresented as \textit{logical formulae} $F(V)$ over program variables, registers, and signals
+    \item \textbf{Transitions} are represented as \textit{binary relations} $T(V, V')$ that link current variables $V$ to next-state variables $V'$
+\end{itemize}
+
+\begin{gframe}{example: reachability}
+Reachability can be mathematically expressed to check if a property $P$ can be violated in $k$ steps: 
+$$I(V_0) \wedge \left(\bigwedge_{i=1}^k T(V_{i-1}, V_i)\right) \wedge \neg P(V_k)$$
+where
+\begin{itemize}
+    \item $I(V_{0})$ means that $V_{0}$ is an initial state
+    \item $\bigwedge_{i=1}^k T(V_{i-1}, V_i)$ represents the (valid) transitions
+    \item $\neg P(V_k)$
+\end{itemize}
+\end{gframe}
+
+\subsection{Invariants and Fixpoints}
+When computing reachable states iteratively, we define $R_0 = I$, and subsequent reachable sets as $T(R_{i-1}) = R_i$. The set of all states reachable in up to $k$ steps is $R_{\le k} = \bigcup_{i=0}^k R_i$.
+
+\begin{defframe}{Safety condition}{}
+A system is considered safe if:
+\begin{enumerate}
+    \item $R_{\le k}$ contains the initial states $I$.
+    \item $T$ cannot leave $R_{\le k}$ (the system has reached a \textbf{fixpoint}).
+    \item $R_{\le k}$ does not overlap with the bad states $\neg P$.
+\end{enumerate}
+\end{defframe}
+
+Since exact reachability computations retard convergence and require complex quantifier alternation ($\forall\exists$), practical approaches often compute over-approximate inductive frames to detect fixpoints more efficiently.
+
+\section{Abstraction and CEGAR}
+Abstraction reduces the state space but introduces non-determinism and may introduce divergent behaviors (non-termination). An abstract program must strictly \textbf{over-approximate} the original program, meaning it contains "more" behaviors than the concrete system.
+
+To handle this automatically, modern model checkers use the \textbf{Counterexample-Guided Abstraction Refinement (CEGAR)} loop:
+\begin{enumerate}
+    \item \textbf{check abstraction:} see if the abstract model is safe; if safe, the concrete system is safe
+    \item \textbf{check feasibility:} if a counterexample is found, check if it is feasible in the concrete system; if feasible, a real bug is found
+    \item \textbf{refine:} if the counterexample is infeasible (a false positive caused by over-approximation), use the failure trace to refine the abstraction and check again
+\end{enumerate}
+
+\section{Protocols \& Execution Models}
+
+Verification models differ based on whether they target hardware or software.
+
+\begin{itemize}
+    \item \textbf{Concurrent Protocols (software):} standard assumptions include that processes run \textbf{asynchronously} (interleave), the scheduler is completely non-deterministic, and individual statements execute atomically; examples include threads accessing shared variables (requiring mutual exclusion algorithms like Peterson's)
+    \item \textbf{Hardware Protocols:} standard assumptions include that components run \textbf{synchronously} based on a global clock (every component makes a step at a time) and communicate via actions or shared memory; examples include cache coherence protocols like MSI (Modified-Shared-Invalid)
+\end{itemize}
+
+\end{document}

@@ -10,11 +10,13 @@ hname="PC"
 notes["$base/FORSYTE/forsyte.pdf"]="FORSYTE/forsyte.pdf"
 notes["$base/FORSYTE/forsyte.tex"]="FORSYTE/forsyte.tex"
 
+notes["$base/CAV/cav.tex"]="CAV/CAV.tex"
+notes["$base/CAV/cav.pdf"]="CAV/CAV.pdf"
+
 # notes["$base/LoCo/LoCo.pdf"]="LOCO/LoCo.pdf"
 # notes["$base/LoCo/LoCo.tex"]="LOCO/LoCo.tex"
 #
-# notes["$base/LoCo/cav.tex"]="CAV/CAV.tex"
-# notes["$base/LoCo/cav.pdf"]="CAV/CAV.pdf"
+
 
 for file in "${!notes[@]}"; do
     cp "$file" "$dest/${notes[$file]}" || { echo "$file failed"; exit 1; }

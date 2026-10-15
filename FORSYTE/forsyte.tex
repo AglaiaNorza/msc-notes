@@ -484,10 +484,9 @@ This propagation and resulting conflict can be visualized in the implication gra
 \vspace{1em}
 
 \begin{gframe}{Simple implementation details}
-In modern CDCL solvers, the implication graph is not stored as an explicit graph data structure. Instead, it is implicitly maintained alongside the assignment trail (stack of currently assigned variables).
+In modern CDCL solvers, the implication graph is not stored as an explicit graph data structure. Instead, it is implicitly maintained via the assignment trail (stack of currently assigned variables).
 
-For each assigned variable, we store a tuple \texttt{(Value, Decision Level, Reason Pointer)}.
-
+For each assigned variable, we store a tuple \texttt{(Value, Decision Level, Reason Pointer)}:
 \begin{itemize}
     \item \textbf{reason pointer (antecedent):} pointer to the clause that forced this assignment
     \subitem storing this pointer allows the solver to instantly trace backward from a conflict to compute a learned clause via resolution, without re-scanning the clause database
