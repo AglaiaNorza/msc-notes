@@ -9,9 +9,14 @@
 \usepackage{/home/aglaia/Documents/latex-setup/packages/title}
 
 \usepackage{bussproofs}
+\usetikzlibrary{fit,backgrounds}
 
-\setuniversity{Sapienza Università di Roma}
-\setcoursename{FORSYTE}
+\setuniversity{Technische Universität Wien}
+\setcoursename{FORSYTE
+
+
+    \small Formal Methods in Systems Engineering
+}
 \setcoursebook{slides}
 \setauthorname{aglaia norza}
 \setauthoremail{norzaglaia@gmail.com}
@@ -226,12 +231,198 @@ The DPLL (Davis-Putnam-Logemann-Loveland) algorithm followed the DP (Davis-Putna
 
 \end{cframe}
 
-PURE LITERAL RULE
+There is an optional optimisation that can be added (but that could be too expensive compared to simple BCP):
+\begin{gframe}{Pure Literal Rule}
+ If a variable appears only with positive polarity (or only negative polarity) throughout $F$:
+\begin{itemize}
+    \item setting that literal to $\top$ cannot falsify any clause
+    \item all clauses containing that pure literal can be eliminated immediately
+\end{itemize}
+\end{gframe}
+
+\paragraph{Kinds of assignments in DPLL:}
+\begin{itemize}
+    \item \textbf{Decided ($\bigwedge$):} arbitrary choice/guess when BCP cannot proceed
+    \item \textbf{Propagated ($|$):} values logically forced by unit resolution (BCP) until $\bot$ or a stall
+\end{itemize}
+
+The main drawback of the DPLL algorithm is its \textbf{blindness to found conflicts}:
+\begin{itemize}
+    \item  when a conflict ($\bot$) is encountered, DPLL mechanically undoes only the most recent decision and tries the opposite branch, without analyzing which decisions actually caused the conflict (\textit{chronological backtracking})
+    \item if a conflict is caused by an independent subset of variables, changing the assignment of an unrelated higher-level variable (like $c$) forces DPLL to rediscover and prove the exact same conflict all over again
+    \item DPLL does not remember or record why a dead end was reached; it possesses no memory across distinct branches of the search tree
+\end{itemize}
+
+\paragraph{DPLL example: variable choosing}
+
+Let's consider an example:
+\[
+\mathcal{F} = (\neg b \vee \neg d) \wedge (b \vee \neg d) \wedge (\neg b \vee \neg c) \wedge (b \vee \neg c) \wedge (\neg a \vee c) \wedge (a \vee c \vee d)
+\]
+
+Initially, no unit clauses exist, so the solver must decide on an unassigned variable.
+
+The choice of an initial variable can heavily influence the search tree:
+\vspace{1em}
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[
+    decision/.style={circle, draw=blue!70, fill=blue!10, thick, inner sep=2pt, minimum size=6mm},
+    prop/.style={rectangle, draw=gray!70, fill=gray!10, rounded corners, inner sep=2pt, minimum size=5mm},
+    conflict/.style={rectangle, draw=red!80, fill=red!15, thick, inner sep=2pt, minimum size=5mm},
+    edge from parent/.style={draw, thick},
+    level 1/.style={sibling distance=38mm, level distance=12mm},
+    level 2/.style={sibling distance=20mm, level distance=12mm},
+    level 3/.style={sibling distance=16mm, level distance=11mm},
+    level 4/.style={level distance=11mm},
+    level 5/.style={level distance=11mm}
+]
+
+% Tree 1: Decision on 'a'
+\node[decision] (root1) {}
+    child {
+        node[prop] {$c$}
+        child {
+            node[prop] {$b$}
+            child {
+                node[conflict] {$\bot$}
+            }
+        }
+        edge from parent node[left] {$a$}
+    }
+    child {
+        node[decision] {}
+        child {
+            node[prop] {$\neg c$}
+            child {
+                node[prop] {$\neg d$}
+                child {
+                    node[conflict] {$\bot$}
+                }
+            }
+            edge from parent node[left] {$b$}
+        }
+        child {
+            node[prop] {$\neg c$}
+            child {
+                node[prop] {$\neg d$}
+                child {
+                    node[conflict] {$\bot$}
+                }
+            }
+            edge from parent node[right] {$\neg b$}
+        }
+        edge from parent node[right] {$\neg a$}
+    };
+
+\node[below=2mm of root1, yshift=-5.5cm, align=center] {\textbf{Tree 1:} first decision on $a$\\ (requires 2 decision levels)};
+
+\end{tikzpicture}
+\hspace{1.5cm}
+\begin{tikzpicture}[
+    decision/.style={circle, draw=blue!70, fill=blue!10, thick, inner sep=2pt, minimum size=6mm},
+    prop/.style={rectangle, draw=gray!70, fill=gray!10, rounded corners, inner sep=2pt, minimum size=5mm},
+    conflict/.style={rectangle, draw=red!80, fill=red!15, thick, inner sep=2pt, minimum size=5mm},
+    edge from parent/.style={draw, thick},
+    level 1/.style={sibling distance=28mm, level distance=12mm},
+    level 2/.style={level distance=12mm},
+    level 3/.style={level distance=11mm},
+    level 4/.style={level distance=11mm},
+    level 5/.style={level distance=11mm}
+]
+
+% Tree 2: Decision on 'c'
+\node[decision] (root2) {}
+    child {
+        node[prop] {$b$}
+        child {
+            node[conflict] {$\bot$}
+        }
+        edge from parent node[left] {$c$}
+    }
+    child {
+        node[prop] {$\neg a$}
+        child {
+            node[prop] {$d$}
+            child {
+                node[prop] {$b$}
+                child {
+                    node[conflict] {$\bot$}
+                }
+            }
+        }
+        edge from parent node[right] {$\neg c$}
+    };
+
+\node[below=2mm of root2, yshift=-5.5cm, align=center] {\textbf{Tree 2:} first decision on $c$\\ (no secondary decisions needed)};
+
+\end{tikzpicture}
+\caption{DPLL search trees for $\mathcal{F}$. Circles represent decision branch points; rounded rectangles represent literals forced via BCP; and red boxes represent conflict nodes ($\bot$).}
+\end{figure}
+\vspace{-1em}
+\paragraph{DPLL example: blindness to found conflicts}
+
+Consider the formula:
+\[
+\mathcal{F} = (\neg c \vee a \vee b) \wedge (\neg a \vee \neg b \vee c) \wedge \mathbf{(\neg a \vee \neg b) \wedge (\neg a \vee b) \wedge (a \vee \neg b) \wedge (a \vee b)}
+\]
+Assume the decision heuristic chooses literals in the order: $\neg c \prec c \prec \neg a \prec a \prec \neg b \prec b$.
+
+\begin{center}
+\begin{tikzpicture}[
+    level 1/.style={sibling distance=54mm, level distance=13mm},
+    level 2/.style={sibling distance=24mm, level distance=12mm},
+    level 3/.style={level distance=11mm},
+    every node/.style={inner sep=2pt, font=\small},
+    dec/.style={circle, draw=blue!70, fill=blue!10, thick, minimum size=6mm},
+    conflict/.style={rectangle, draw=red!80, fill=red!15, thick, minimum size=5mm},
+    highlight/.style={draw=orange!80, fill=orange!8, dashed, rounded corners=3mm}
+]
+
+\draw[highlight] (-4.3, -4.0) rectangle (-0.9, -1.9);
+\node[text=orange!90!black, font=\footnotesize, align=center] at (-2.6, -4.5) {\textbf{subproblem}\\\textbf{refutation}};
+
+\draw[highlight] (0.9, -4.0) rectangle (4.3, -1.9);
+\node[text=orange!90!black, font=\footnotesize, align=center] at (2.6, -4.5) {\textbf{redundant}\\\textbf{re-refutation}};
+
+\node[dec] (root) {}
+    child { node[dec] {$\neg c$}
+        child { node[dec] {$\neg a$}
+            child { node[conflict] {$\bot$} }
+        }
+        child { node[dec] {$a$}
+            child { node[conflict] {$\bot$} }
+        }
+        edge from parent node[left=2pt, text=blue!80!black, font=\footnotesize] {decide}
+    }
+    child { node[dec] {$c$}
+        child { node[dec] {$\neg a$}
+            child { node[conflict] {$\bot$} }
+        }
+        child { node[dec] {$a$}
+            child { node[conflict] {$\bot$} }
+        }
+        edge from parent node[right=2pt, text=blue!80!black, font=\footnotesize] {decide}
+    };
+
+\end{tikzpicture}
+\end{center}
+
+\begin{itemize}
+        \item under $\neg c$, splitting on $\neg a$ and $a$ yields contradictions because the subformula over $a, b$ is unconditionally unsatisfiable
+        \item chronological backtracking flips $\neg c \to c$.
+        \item cnder $c$, DPLL has \emph{no memory} of the previous derivation and blindly duplicates the exact same exploration on $\neg a$ and $a$
+\end{itemize}
 
 
 
 \section{Clause-Driven Conflict Learning}
 
+
+
+\chapter{Algebraic Reasoning}
+\chapter{Program Analysis}
+\chapter{Model Checking Approaches}
 
 
 \end{document}
