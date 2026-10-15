@@ -610,7 +610,7 @@ However, not all cuts are useful. There are two extremes we want to avoid:
 Because the decision cut is too broad (weak) and the conflict cut is redundant, modern CDCL solvers look for a cut in the middle of the graph. The goal is to find a cut that produces a \textbf{short} clause (because shorter clauses restrict the search space more heavily) and contains \textbf{novel information} not explicitly written in the original formula. 
 \end{gframe}
 
-\subsection*{Unique Implication Points (UIPs) and Asserting Clauses}
+\subsubsection{Unique Implication Points (UIPs) and Asserting Clauses}
 
 To find the optimal cut in an implication graph, modern solvers rely on finding a "bottleneck" that forces the conflict. This bottleneck is called a Unique Implication Point.
 
@@ -651,6 +651,204 @@ When we perform resolution backward from the conflict and stop at the First UIP,
 \end{itemize}
 
 
+\subsubsection*{Detection of UIPs via Resolution}
+
+To compute the First UIP clause (the asserting clause), the solver iteratively computes (by resolution) the clauses that are associated with cuts moving \textit{backward} from the conflict.
+
+\begin{cframe}{ColorLemma}{UIP Detection Algorithm}
+    \vspace{-1em}
+\begin{enumerate}
+    \item let $c_0$ be the first conflict clause
+    \item pick the literal $\ell \in c_0$ that was \textbf{last assigned} on the trail
+    \item \textbf{while} there is more than one literal in $c_i$ that is assigned at the \textit{current} decision level:
+    \begin{enumerate}
+        \item let $c_{i+1}$ be the resolvent of $c_i$ and the \textit{reason clause} of $\ell$ (apply a resolution step to $c_{i}$ and the reason clause of $\ell$)
+        \item let $\ell$ be the literal $\ell' \in c_{i+1}$ that was last assigned
+    \end{enumerate}
+\end{enumerate}
+\end{cframe}
+
+\begin{itemize}
+
+    \item The literal $\ell$ in our conflict clause is false (which contributed to the conflict). Because $\ell$ was forced via BCP, it has a \textit{reason clause} that caused its assignment.
+    \item By resolving the current conflict clause $C_i$ with the reason clause of $\ell$, we eliminate $\ell$ (and $\neg \ell$) and merge the remaining literals. We have effectively taken a step backward in the implication graph, moving the ``cut'' behind $\ell$ (every intermediate generated clause $C_i$ corresponds to a valid cut in the implication graph). To ensure we move backward through the graph without skipping or getting tangled, we resolve variables in the exact reverse order of how they were assigned.
+\item The loop stops exactly when $C_i$ contains only \textit{one} literal from the current decision level. The last $C_i$ produced is the \textbf{First UIP-clause}
+    \item As we established, because this final clause contains exactly one literal from the highest decision level, it is an asserting clause
+\end{itemize}
+
+\begin{gframe}{First UIP Example}
+\begin{itemize}
+    \item \textbf{conflict node ($\kappa$):} falsified by assignments $y=1@4$ and $z=1@4$.
+    \item \textbf{initial conflicting clause ($c_0$):} $(\neg y \lor \neg z)$
+\end{itemize}
+
+\textbf{resolution trace:}
+\begin{enumerate}
+    \item \textbf{1st resolution (resolving $y$):}
+    \begin{itemize}
+        \item the literal $y$ was forced by $h, i$ (from level 2) and $t$ (from level 4). 
+        \item \textbf{reason for $y$:} $(\neg h \lor \neg i \lor \neg t \lor y)$
+        \item \textbf{resolvent ($c_1$):} resolve $c_0$ with reason($y$) to eliminate $y$.
+        \item $c_1 = (\neg h \lor \neg i \lor \neg t \lor \neg z)$
+        \item \textit{level 4 literals remaining:} $t$ and $z$. (more than one, so we continue).
+    \end{itemize}
+
+    \item \textbf{2nd resolution (resolving $t$):}
+    \begin{itemize}
+        \item the literal $t$ was forced by $d$ (level 1), $g$ (level 2), and $s$ (level 4).
+        \item \textbf{reason for $t$:} $(\neg d \lor \neg g \lor \neg s \lor t)$
+        \item \textbf{resolvent ($c_2$):} resolve $c_1$ with reason($t$) to eliminate $t$.
+        \item $c_2 = (\neg d \lor \neg g \lor \neg s \lor \neg h \lor \neg i \lor \neg z)$
+        \item \textit{level 4 literals remaining:} $s$ and $z$.
+    \end{itemize}
+
+    \item \textbf{3rd resolution (resolving $z$):}
+    \begin{itemize}
+        \item the literal $z$ was forced purely by $x$ (level 4).
+        \item \textbf{reason for $z$:} $(\neg x \lor z)$
+        \item \textbf{resolvent ($c_3$):} resolve $c_2$ with reason($z$) to eliminate $z$.
+        \item $c_3 = (\neg x \lor \neg d \lor \neg g \lor \neg s \lor \neg h \lor \neg i)$
+        \item \textit{level 4 literals remaining:} $x$ and $s$.
+    \end{itemize}
+
+    \item \textbf{4th resolution (resolving $x$):}
+    \begin{itemize}
+        \item the literal $x$ was forced by $s$ (level 4).
+        \item \textbf{reason for $x$:} $(\neg s \lor x)$
+        \item \textbf{resolvent ($c_4$):} resolve $c_3$ with reason($x$) to eliminate $x$. 
+        \item \textit{note:} because $\neg s$ is already present in $c_3$, merging them performs \textit{self-subsuming resolution} (the duplicate simply absorbs).
+        \item $c_4 = (\neg d \lor \neg g \lor \neg s \lor \neg h \lor \neg i)$
+        \item \textit{level 4 literals remaining:} \textbf{only $s$!}
+    \end{itemize}
+\end{enumerate}
+
+\textbf{conclusion:}
+$c_4$ now contains exactly one literal ($\neg s$) from the highest decision level (level 4), so the algorithm terminates. 
+
+\begin{itemize}
+    \item \textbf{first UIP:} the variable $s$.
+    \item \textbf{the learned (asserting) clause:} $(\neg d \lor \neg g \lor \neg s \lor \neg h \lor \neg i)$. 
+    \item \textbf{backjumping execution:} the solver looks at the variables in the learned clause ($s@4$, $d@1$, $g@2$, $h@2$, $i@2$); the second-highest decision level is \textbf{level 2}, so the solver will backjump to it, clear all level 3 and 4 assignments, and the new learned clause will immediately force $s$ to be false via BCP.
+\end{itemize}
+\end{gframe}
+
+\subsection*{Minimizing the 1st UIP Clause}
+While the asserting clause is good enough, it can often be shrunk further. Shorter clauses often preferred, as they restrict the search space more effectively. Modern solvers use resolution techniques to analyze the implication graph and prune redundant literals from the learned clause.
+
+there are two levels of minimization: \textbf{local} and \textbf{recursive}.
+
+
+
+
+\begin{cframe}{ColorLemma}{Local Minimization}
+Local minimization looks at the \textit{immediate} antecedents (parents) of the literals in the learned clause.
+
+\begin{itemize}
+    \item If all the immediate antecedents of a literal $\ell$ are \textit{already present} (marked) in the learned clause, then $\ell$ is redundant and can be removed.
+    \item This is an application of \textit{self-subsuming resolution}. If our learned clause contains $(\dots \lor \neg h \lor \neg i)$, and the reason $i$ was forced in the first place was $h$ (meaning the reason clause is $\neg h \lor i$), we can resolve them. Resolving the learned clause with the reason clause eliminates $i$ and leaves us with $(\dots \lor \neg h \lor \neg h)$, which simplifies to just $(\dots \lor \neg h)$.
+\subitem (if $i$ was only forced to be true because $h$ was true (reason clause: $\neg h \lor i$), then $h$ being true automatically drags $i$ along with it; therefore, assigning $h = \text{true}$ is enough to guarantee the conflict by itself, and we do not need to explicitly ban $i$: banning $h$ covers the root cause)
+\subitem (we resolve the learned clause $(\dots \lor \neg h \lor \neg i)$ with the reason clause $(\neg h \lor i)$, which yields $(\dots \lor \neg h)$, safely eliminating the redundant variable $i$)
+        \vspace{-1em}
+\end{itemize}
+\paragraph{Algorithm:}
+
+    \begin{enumerate}
+\vspace{-1em}
+        \item mark all variables present in the first UIP clause
+        \item for each literal, check its reason clause
+        \item if every other literal in the reason clause is also marked, remove the candidate literal
+    \end{enumerate}
+\end{cframe}
+
+\begin{cframe}{ColorThm}{Recursive Minimization}
+Local minimization is fast but misses deeper redundancies. What if a literal's antecedent is \textit{not} in the learned clause, but that antecedent was forced by things that \textit{are}? Recursive minimization traces paths all the way back through the graph.
+
+\begin{itemize}
+    \item a candidate literal can be removed if \textit{every path} backward from its antecedents in the implication graph eventually terminates at either:
+    \begin{enumerate}
+        \item a literal that is already marked (present in the learned clause)
+        \item a top-level assignment (decision level 0), because level 0 variables are universally true
+    \end{enumerate}
+\end{itemize}
+
+    \vspace{-1.5em}
+\paragraph{Algorithm:}
+    \begin{enumerate}
+\vspace{-1em}
+        \item mark all variables in the 1st UIP clause
+        \item for each candidate literal, DFS backward through its antecedents in the implication graph
+        \item if the search always hits marked literals or level 0 assignments, the candidate is redundant and is removed
+    \end{enumerate}
+\begin{itemize}
+    \item To keep this fast, if the backward search ever hits an unmarked decision variable, or pulls in a variable from a different decision level (that isn't level 0), the search for that candidate terminates early with a failure (the candidate cannot be removed).
+\end{itemize}
+\end{cframe}
+
+\begin{gframe}{Example}
+    Consider the first UIP:
+ $$(\neg d \lor \neg g \lor \neg s \lor \neg h \lor \neg i)$$
+ \begin{itemize}
+\item \textit{local minimization:} $i$ is removed because its only antecedent is $h$, which is already in the clause; the clause becomes $(\neg d \lor \neg g \lor \neg s \lor \neg h)$.
+    \item \textit{recursive minimization:} $h$ is investigated; its antecedents are $g$ (which is marked) and $e$ (unmarked)
+        \subitem the search recursively checks $e$: the antecedents of $e$ are $d$ (marked) and $b$ (Level 0); because all paths hit marked or Level 0 nodes, $h$ is also safely removed
+    \item \textit{minimized clause:} $(\neg d \lor \neg g \lor \neg s)$
+\end{itemize}
+\end{gframe}
+
+\subsection{Clause Database Reduction Strategies}
+While learning clauses is essential for pruning the search space, keeping \textit{all} learned clauses forever is detrimental.
+
+The main reasons why periodically cleaning out the clause database is beneficial are intuitive:
+\begin{itemize}
+    \item too many clauses will eventually exhaust system memory
+    \item the more clauses the solver has to watch and evaluate, the slower BCP becomes
+    \item as the solver moves to different areas of the search space, older learned clauses often become irrelevant to the current search focus
+    \item some clauses become permanently useless (e.g., if a clause is satisfied by a top-level assignment, it will never be falsified again)
+\end{itemize}
+
+Commonly-used heuristics include:
+\begin{itemize}
+    \item \textit{Size Heuristics:} shorter clauses are more powerful, so long clauses get discarded
+    \item \textit{Least Recently Used (LRU):} the solver tracks when a clause was last used in BCP or conflict analysis and deletes those that haven't been used recently (like in cache design)
+    \item \textit{Clause Activity Scores:} clauses can be given a score that is bumped every time they participate in generating a new conflict clause; low-scoring clauses are discarded
+    \item \textbf{Glucose Level / LBD (Literal Block Distance)} (very common):
+    \begin{itemize}
+        \item based on the number of \textit{distinct decision levels} present in the literals in the learned clause
+        \item a clause might be long, but if all its variables were assigned at the same decision level, they are tightly clustered in the search tree; a low LBD means the clause acts like a short clause
+    \end{itemize}
+\end{itemize}
+
+\subsection{Decision Heuristics}
+Another important aspect is that of choosing which unassigned variable BCP should choose next.
+
+A good heuristic should be fast to compute, it should lead the solver to conflicts quickly, and it should be adaptable to the solver's current focus (e.g. involving variables involved in recent conflicts).
+
+\begin{cframe}{ColorLemma}{VSIDS: Variable State Independent Decaying Sum}
+VSIDS is the standard heuristic used in almost all modern CDCL solvers. It scores variables based on their involvement in recent conflicts:
+\begin{itemize}
+    \item every variable starts with a score (often 0, or based on its initial frequency in the formula)
+    \item whenever a conflict occurs and a new clause is learned, the solver increases the score of all variables involved in the conflict analysis (e.g., variables in the learned clause and the paths resolving to it)
+    \item periodically, the solver divides the scores of \textit{all} variables in the system by a constant factor (so that the numbers don't take up too much space in memory / don't overflow)
+\end{itemize}
+When a decision has to be made, the solver simply picks the unassigned variable with the highest current score
+\end{cframe}
+
+\subsection{Restarts}
+In SAT solving, algorithms often suffer from "heavy-tail behavior.": due to a few bad early decisions, the solver might wander into a massive, heavily constrained subtree of the search space that takes too long to evaluate, even though a satisfying assignment (or a quick proof of unsatisfiability) might exist in a different branch.
+
+To escape these dead ends, solvers frequently \textbf{restart} the search process.
+\begin{itemize}
+    \item the solver abandons its current assignment trail and jumps completely back to Decision Level 0.
+    \item but it doesn't reset its state completely: it keeps all the learned clauses, and the current VSIDS variable scores
+\end{itemize}
+
+Since the solver retains its learned clauses and heuristic scores, the next search will not be identical to the previous one:
+\begin{itemize}
+    \item the VSIDS scores have been altered by the conflicts encountered during the abandoned run, meaning the solver will choose variables in a different order
+    \item the newly learned clauses will act as roadblocks, steering the solver away from the bad paths that caused the previous conflicts
+\end{itemize}
+
+Restarts are scheduled according to various mathematical sequences to balance short, aggressive searches with deeper explorations.
 
 \chapter{Algebraic Reasoning}
 \chapter{Program Analysis}
