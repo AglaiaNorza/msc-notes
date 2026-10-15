@@ -21,7 +21,12 @@
 \setauthorname{aglaia norza}
 \setauthoremail{norzaglaia@gmail.com}
 \setauthorgithub{AglaiaNorza}
-\setcoverphoto{} 
+\setcoverphoto{cover-meme}
+
+\setcoverwidth{0.6\textwidth}
+\setcoverheight{0.6\textwidth}
+\setbeforespace{2.5em}
+\setafterspace{2.5em}
 
 \begin{document}
 
@@ -414,9 +419,83 @@ Assume the decision heuristic chooses literals in the order: $\neg c \prec c \pr
         \item cnder $c$, DPLL has \emph{no memory} of the previous derivation and blindly duplicates the exact same exploration on $\neg a$ and $a$
 \end{itemize}
 
-
-
 \section{Clause-Driven Conflict Learning}
+Clause-Driven Conflict Learning improves on DPLL by implementing \textbf{backjumping}, a technique that helps to recover from bad decisions by skipping redundant conflicts.
+
+To implement backjumping, one needs to recognise, store and update \textit{which decisions} contributed to conflicts. CDCL solvers achieve this through \textbf{Conflict Analysis} and \textbf{Clause Learning}.
+
+\subsection{Implication Graph}
+An \textbf{implication graph} is a labelled DAG $G = (V, E)$ where
+\begin{itemize}
+    \item $V$ represents the literals of the current partial assignment (\textit{trail})
+    \subitem nodes are labelled with their corresponding literal and decision level ($x = v @ d$ where $v \in \{0,1\}$)
+    \item $E$ represents the reasons of the assignments
+    \subitem edges are labelled with the reason clause used for propagation
+\item there is a special node $k$ representing a conflict - it has no outgoing edges, and its incoming edges are:
+    $$\{(l, k) | \neg l \in C, C \in F\}$$
+    \begin{itemize}
+        \item $l$ is a literal node in the implication graph that has been assigned true
+        \item $C \in F$ is the clause that caused the conflict (i.e. has been falsified)
+        \item $\neg l \in C$ is the qualifying condition for the edge: the negation of $l$ is a component of the clause $C$ ($\neg l$ is false, and this falsification contributes to breaking clause $C$)
+        \item $(l,k)$ a directed edge is drawn from the node $l$ to the conflict node $k$, labeled with $C$ to track which clause caused the conflict
+    \end{itemize}
+\end{itemize}
+
+\begin{gframe}{Example}
+Suppose the formula contains the clause $C = (\neg x_1 \lor x_2 \lor \neg x_3)$.
+
+For $C$ to become a conflicting (falsified) clause, the current decision trail must contain the assignments:
+\begin{itemize}
+    \item $x_1 = \text{true}$ (node $x_1$ exists in the graph)
+    \item $x_2 = \text{false}$ (node $\neg x_2$ exists in the graph)
+    \item $x_3 = \text{true}$ (node $x_3$ exists in the graph)
+\end{itemize}
+
+The nodes responsible for the conflict are $x_1$, $\neg x_2$, and $x_3$. Therefore, the incoming edges to the conflict node $\kappa$ will originate from $x_1$, $\neg x_2$, and $x_3$, representing the assignments that caused $C$ to fail.
+\end{gframe}
+
+\paragraph{Implication Graph Example.}
+Let the formula $F$ be:
+\[ F = C_1 \land C_2 \land C_3 = (\neg a \lor \neg b \lor c) \land (\neg b \lor \neg c) \land (\neg a \lor b) \]
+
+Suppose our first decision is to assign $a$ to true (at decision level 1). This triggers Boolean Constraint Propagation (BCP) as follows:
+\begin{enumerate}
+    \item $a = 1$ forces $b = 1$ to satisfy $C_3$
+    \item $b = 1$ forces $c = 0$ to satisfy $C_2$
+    \item now $a = 1$, $b = 1$, and $c = 0$, which falsifies clause $C_1$
+\end{enumerate}
+
+This propagation and resulting conflict can be visualized in the implication graph below:
+\begin{center}
+\begin{tikzpicture}[>=stealth, thick]
+    \node (a) at (0, 0) {$a = 1 @ 1$};
+    \node (b) at (3.5, 0) {$b = 1 @ 1$};
+    \node (c) at (7, 0) {$c = 0 @ 1$};
+    \node (kappa) at (7, -2.5) {$\kappa$};
+
+    \draw[->] (a) -- node[above] {$C_3$} (b);
+    \draw[->] (b) -- node[above] {$C_2$} (c);
+
+    \draw[->, red] (a) |- node[near start, left] {$C_1$} (6.7, -2.5) -- (kappa); 
+    \draw[->, red] (b) -- node[above right, xshift=-0.2cm] {$C_1$} (kappa);
+    \draw[->, red] (c) -- node[right] {$C_1$} (kappa);
+\end{tikzpicture}
+\end{center}
+\vspace{1em}
+
+\begin{gframe}{Simple implementation details}
+In modern CDCL solvers, the implication graph is not stored as an explicit graph data structure. Instead, it is implicitly maintained alongside the assignment trail (stack of currently assigned variables).
+
+For each assigned variable, we store a tuple \texttt{(Value, Decision Level, Reason Pointer)}.
+
+\begin{itemize}
+    \item \textbf{reason pointer (antecedent):} pointer to the clause that forced this assignment
+    \subitem storing this pointer allows the solver to instantly trace backward from a conflict to compute a learned clause via resolution, without re-scanning the clause database
+    \item \textbf{decision variables:} variables chosen by the decision heuristic (guesses) are not forced by any clause. Their reason pointer is set to \texttt{null} (so,during conflict analysis, a \texttt{null} pointer signifies a root node in the implication graph)
+\end{itemize}
+\end{gframe}
+
+\subsection{Clause Learning}
 
 
 
