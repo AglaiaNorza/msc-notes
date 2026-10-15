@@ -13,9 +13,8 @@ notes["$base/FORSYTE/forsyte.tex"]="FORSYTE/forsyte.tex"
 notes["$base/CAV/cav.tex"]="CAV/CAV.tex"
 notes["$base/CAV/cav.pdf"]="CAV/CAV.pdf"
 
-# notes["$base/LoCo/LoCo.pdf"]="LOCO/LoCo.pdf"
-# notes["$base/LoCo/LoCo.tex"]="LOCO/LoCo.tex"
-#
+notes["$base/LoCo/loco.pdf"]="LOCO/LoCo.pdf"
+notes["$base/LoCo/loco.tex"]="LOCO/LoCo.tex"
 
 
 for file in "${!notes[@]}"; do

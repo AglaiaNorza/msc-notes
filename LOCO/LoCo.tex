@@ -1,0 +1,176 @@
+%! TEX program = xelatex
+\documentclass[a4paper, 11pt]{report} 
+
+\usepackage{/home/aglaia/Documents/latex-setup/packages/packs}
+\usepackage{/home/aglaia/Documents/latex-setup/packages/macros}
+\usepackage{/home/aglaia/Documents/latex-setup/packages/mainstyle} 
+\usepackage{/home/aglaia/Documents/latex-setup/packages/colors}    
+\usepackage{/home/aglaia/Documents/latex-setup/packages/frameboxes} 
+\usepackage{/home/aglaia/Documents/latex-setup/packages/title}
+
+\usepackage{bussproofs}
+
+\setuniversity{Technische Universität Wien}
+\setcoursename{Logic and Computation}
+\setcoursebook{slides, official script}
+\setauthorname{aglaia norza}
+\setauthoremail{norzaglaia@gmail.com}
+\setauthorgithub{AglaiaNorza}
+
+\setcoverphoto{cover-meme}
+
+\setcoverwidth{0.7\textwidth}
+\setcoverheight{0.6\textwidth}
+\setbeforespace{2.5em}
+\setafterspace{4em}
+
+
+\begin{document}
+
+\makecustomcover
+
+\tableofcontents
+\clearpage
+
+\chapter{Proof Theory}
+Proof theory is concerned with \textit{provability} rather than just truth.
+
+\begin{defframe}{Deductive System}{}
+    A deductive system (calculus) for a logic is a purely syntactic method (i.e. a method that must manipulate only the symbols of the syntax, without using the meaning assigned to them by semantics) for defining the notion of deduction (proof), telling us when a given expression is deducible from a collection of given expressions.
+
+    Formally:
+    $$\Sigma = (L, W, R, Ax)$$
+    where:
+    \begin{itemize}
+        \item $L$ is a language
+        \item $W$ is a set of WFF in $L$
+        \item $R$ is a finite set of $n$-ary relations on $W$ (inference rules)
+        \item $Ax \subseteq W$ is the (decideable) set of axioms
+    \end{itemize}
+\end{defframe}
+
+\begin{defframe}{Proof}{}
+    Let $\Sigma$ be a deductive system. A proof (or derivation) of $P$ in $\Sigma$ is a finite tree of WFF rooted in $P$ such that the leafs are formulas in $Ax$ and all the internal nodes are obtained from formulas in $Ax$ and/or (already) derived formulas using a rule in $R$.
+\end{defframe}
+
+\section{Natural Deduction}
+Natural deduction is a proof calculus in which logical reasoning is expressed by inference rules closely related to the "natural" way of reasoning, such as introducing temporary assumptions (to introduce an "if") or reasoning by cases (to eliminate an "or") (in contrast with Hilber-style systems, which use axioms as much as possible).
+
+
+\subsection{Natural Deduction Rules}
+A key feature of Natural Deduction is the ability to temporarily assume a hypothesis to explore a logical path, and then later cancel (or ``discharge'') that hypothesis when introducing certain logical operators. We denote discharged hypotheses by placing them in square brackets, e.g., $[A]$.
+
+\subsubsection*{Conjunction ($\wedge$)}
+\begin{center}
+\AxiomC{$A \wedge B$}
+\RightLabel{$(\wedge e_1)$}
+\UnaryInfC{$A$}
+\DisplayProof
+\qquad
+\AxiomC{$A \wedge B$}
+\RightLabel{$(\wedge e_2)$}
+\UnaryInfC{$B$}
+\DisplayProof
+\qquad
+\AxiomC{$A$}
+\AxiomC{$B$}
+\RightLabel{$(\wedge i)$}
+\BinaryInfC{$A \wedge B$}
+\DisplayProof
+\end{center}
+
+\subsubsection*{Disjunction ($\vee$)}
+\begin{center}
+\AxiomC{$A$}
+\RightLabel{$(\vee i_1)$}
+\UnaryInfC{$A \vee B$}
+\DisplayProof
+\qquad
+\AxiomC{$B$}
+\RightLabel{$(\vee i_2)$}
+\UnaryInfC{$A \vee B$}
+\DisplayProof
+\qquad
+\AxiomC{$A \vee B$}
+\AxiomC{$[A]$}
+\noLine
+\UnaryInfC{$\vdots$}
+\noLine
+\UnaryInfC{$C$}
+\AxiomC{$[B]$}
+\noLine
+\UnaryInfC{$\vdots$}
+\noLine
+\UnaryInfC{$C$}
+\RightLabel{$(\vee e)$}
+\TrinaryInfC{$C$}
+\DisplayProof
+\end{center}
+
+\begin{itemize}
+    \item[($\lor$ e)] If you already know $A \vee B$ is true, you have to explore both distinct possibilities to conclude a new fact $C$. First, you assume $A$ is the true one and derive $C$; then, you separately assume $B$ is the true one and derive $C$. Since $C$ naturally follows in either case, $C$ is true regardless of whether $A$ or $B$ triggered it. Both assumptions $[A]$ and $[B]$ are then discharged
+\end{itemize}
+
+\subsubsection*{Implication ($\rightarrow$)}
+\begin{center}
+\AxiomC{$A$}
+\AxiomC{$A \rightarrow B$}
+\RightLabel{$(\rightarrow e)$}
+\BinaryInfC{$B$}
+\DisplayProof
+\qquad
+\AxiomC{$[A]$}
+\noLine
+\UnaryInfC{$\vdots$}
+\noLine
+\UnaryInfC{$B$}
+\RightLabel{$(\rightarrow i)$}
+\UnaryInfC{$A \rightarrow B$}
+\DisplayProof
+\end{center}
+
+\begin{itemize}
+    \item[(-> i)] To prove $A \rightarrow B$, we temporarily assume $A$ is true. If, under this assumption, we manage to derive $B$, we can conclude that $A \rightarrow B$ holds unconditionally. At this point, the temporary assumption $A$ is discharged ($[A]$)
+\end{itemize}
+
+\subsubsection*{Negation ($\neg$) and Falsum ($\bot$)}
+\begin{center}
+\AxiomC{$A$}
+\AxiomC{$\neg A$}
+\RightLabel{$(\neg e)$}
+\BinaryInfC{$\bot$}
+\DisplayProof
+\qquad
+\AxiomC{$[A]$}
+\noLine
+\UnaryInfC{$\vdots$}
+\noLine
+\UnaryInfC{$\bot$}
+\RightLabel{$(\neg i)$}
+\UnaryInfC{$\neg A$}
+\DisplayProof
+\qquad
+\AxiomC{$\bot$}
+\RightLabel{$(\bot e)$}
+\UnaryInfC{$A$}
+\DisplayProof
+\qquad
+\AxiomC{$[\neg A]$}
+\noLine
+\UnaryInfC{$\vdots$}
+\noLine
+\UnaryInfC{$\bot$}
+\RightLabel{$(RAA)$}
+\UnaryInfC{$A$}
+\DisplayProof
+\end{center}
+ 
+\begin{itemize}
+    \item[($\neg e$)] To prove that $A$ is false ($\neg A$), we assume the opposite: that $A$ is true; if calculating from this assumption leads to a logical absurdity or contradiction ($\bot$), we can conclude $\neg A$ and discharge the assumption $[A]$
+
+\item[(RAA)] (Similar to negation introduction, but used to prove a positive statement $A$). We assume its negation, $\neg A$: if this leads to a contradiction ($\bot$), we conclude that $A$ must be true, discharging the assumption $[\neg A]$
+    \subitem \color{gray}this rule distinguishes Classical Logic from Intuitionistic Logic !
+\end{itemize}
+
+
+\end{document}
