@@ -11,6 +11,12 @@
 \usepackage{bussproofs}
 \usetikzlibrary{fit,backgrounds}
 
+\usepackage{listings}
+
+\usepackage{csquotes}
+\usepackage{todonotes}
+\MakeOuterQuote{"}
+
 \setuniversity{Technische Universität Wien}
 \setcoursename{FORSYTE
 
@@ -849,6 +855,183 @@ Since the solver retains its learned clauses and heuristic scores, the next sear
 \end{itemize}
 
 Restarts are scheduled according to various mathematical sequences to balance short, aggressive searches with deeper explorations.
+
+\section{SAT-based solvers}
+There are different ways to encode problems into propositional logic, and there are different ways to interact with the solver.
+
+We will analyse four different structures of SAT-based tools:
+\begin{enumerate}
+    \item direct approach: non-incremental non-integrated
+    \item embedded direct approach: non-incremental integrated
+    \item incremental integrated (IPASIR-based CEGAR)
+    \item interactive integrated (IPASIR-UP External Propagators)
+\end{enumerate}
+
+\begin{gframe}{Example: 2-bit counter}
+Let us model a 2-bit counter with bits $a$ (LSB) and $b$ (MSB).
+
+\begin{itemize}
+    \item initial state $I(s_0)$:
+        $$ I(b,a) = \neg b \wedge \neg a $$
+        (counter starts at 0)
+    
+    \item transition relation $\mathcal{T}(s, s')$: 
+    $$ \mathcal{T}((b,a), (b',a')) = (b' \leftrightarrow (a \oplus b)) \wedge (a' \leftrightarrow \neg a) $$
+(the counter increments by 1 modulo 4)
+    
+
+\end{itemize}
+Let's say that we want to check if the counter ever reaches the value 2 (binary 10):
+    \begin{itemize}
+        \item we introduce a bad state $ B(b,a) = b \wedge \neg a $
+    \end{itemize}
+
+Our goal is to prove that the counter's value is always $\neq 2$. 
+
+This can be posed as a satisfiability problem: we need to find a ($k$-long) execution of the system where the counter has value $2$ (a counterexample).
+
+Such an execution trace exists if the following propositional formula is satisfiable for a specific bound $k$:
+$$ I(s_0) \wedge \mathcal{T}(s_0, s_1) \wedge \dots \wedge \mathcal{T}(s_{k-1}, s_k) \wedge B(s_k) $$
+
+We iteratively check this formula by increasing $k$:
+\begin{itemize}
+    \item if the formula is UNSAT, the bad state is not reachable in $k$ steps - we increase $k$ again
+    \item if the formula is SAT, the property is violated - the satisfying assignment is our counterexample
+\end{itemize}
+
+Let's unroll the execution for the first few bounds to see if the property is violated:
+\begin{enumerate}
+    \item \textbf{$k=0$}: can the initial state violate the property?
+    $$ I(s_0) \wedge B(s_0) $$
+    $$ (\neg b_0 \wedge \neg a_0) \wedge (b_0 \wedge \neg a_0) $$
+    This is UNSAT.
+    
+    \item \textbf{$k=1$}: can we reach the bad state in exactly one step?
+    $$ I(s_0) \wedge \mathcal{T}(s_0, s_1) \wedge B(s_1) $$
+    $$ (\neg b_0 \wedge \neg a_0) \wedge ((b_1 \leftrightarrow (a_0 \oplus b_0)) \wedge (a_1 \leftrightarrow \neg a_0)) \wedge (b_1 \wedge \neg a_1) $$
+    This evaluates to UNSAT.
+    
+    \item \textbf{$k=2$}: can we reach the bad state in exactly two steps?
+    $$ I(s_0) \wedge \mathcal{T}(s_0, s_1) \wedge \mathcal{T}(s_1, s_2) \wedge B(s_2) $$
+    This will return SAT, proving the counter reaches value 2 after two transitions.
+\end{enumerate}
+\end{gframe}
+
+\subsection{Direct Approach (Non-Incremental, Non-Integrated)}
+In the direct approach, the tool translates the entire Bounded Model Checking (BMC) problem for a specific bound $k$ into a standard text file format (DIMACS). 
+
+For each bound $k$:
+\begin{enumerate}
+    \item Encode the complete BMC problem into a single SAT problem in DIMACS format
+    \item Call a standalone SAT solver on the produced file
+    \item Parse and evaluate the output of the solver to map it back to a counterexample
+\end{enumerate}
+
+If the formula is UNSAT, the process repeats for $k+1$. The solver retains no memory of the previous bounds, meaning the formula must be constructed entirely from scratch every time.
+
+\begin{gframe}{DIMACS format}
+    \begin{lstlisting}
+c DIMACS example
+p cnf 5 3
+1 -5 4 0
+-1 5 3 4 0
+-3 -4 0
+    \end{lstlisting}
+    \vspace{-1em}
+    \begin{itemize}
+        \item comments start with \texttt{c}
+        \item the header has the format \texttt{p cnf m n} with \texttt{m} maximum variable index, \texttt{n} number of clauses
+        \item one line per clause, terminated by a \texttt{0}: literals are encoded as signed integers
+    \end{itemize}
+\end{gframe}
+
+\subsection{Embedded Direct Approach (Non-Incremental, Integrated)}
+To eliminate the overhead of file I/O and parsing, the SAT solver can be embedded directly within the toolchain.
+\begin{itemize}
+    \item uses the interface of the solver directly instead of DIMACS files
+    \item the solving process itself remains non-incremental (the solver still solves each bound as a completely new, independent problem)
+\end{itemize}
+
+\begin{cframe}{ColorWarn}{Downsides of direct approaches}
+While the simple solution can often be the best one, complete encodings for large bounds can become extremely large or even impossible to generate. Furthermore, not every part of the unrolled formula is actually relevant to finding a refutation.
+\end{cframe}
+
+\subsection{Incremental SAT Solvers}
+Instead of rebuilding the formula from scratch for every bound, Incremental SAT solving evaluates a sequence of related formulae ($F_0, F_1, F_2 \dots$) by reusing the same solver instance. 
+
+
+\begin{cframe}{ColorThm}{Advantages}
+    \vspace{-1em}
+\begin{itemize}
+    \item smaller initial encoding overhead
+    \item reuses previous reasoning steps: retains learned clauses, gathered information (phases, scores), and applied formula simplifications
+    \item supported by the standardized IPASIR (Re-entrant Incremental Satisfiability API) interface, making different solvers interchangeable
+\end{itemize}
+\end{cframe}
+
+The sequence of related formulas ($F_0, F_1, F_2, \dots$) represents an \textbf{incremental building} of the overall problem. The solver retains the previous clauses and simply appends the new ones ($\Delta_i$):
+\begin{itemize}
+    \item $F_0 = \Delta_0$
+    \item $F_1 = \Delta_0 \wedge \Delta_1$
+    \item $F_2 = \Delta_0 \wedge \Delta_1 \wedge \Delta_2$
+\end{itemize}
+
+In Bounded Model Checking, $\Delta_i$ represents the newly unrolled transition relation $\mathcal{T}(s_{i-1}, s_i)$.
+
+\subsubsection{Assumptions}
+\begin{defframe}{Assumptions}{}
+To manage incremental queries, we use \textbf{assumptions}: temporary unit clauses passed to the solver before a solve call. 
+\begin{itemize}
+    \item assumptions act as forced decisions for the current SAT call.
+    \item they are temporary: once the solve call finishes, the assumptions disappear
+    \item if a query fails under a set of assumptions, the solver returns a subset of the assumptions that were responsible for the conflict (extracted via the learned clause of the very last conflict analysis)
+\end{itemize}
+\end{defframe}
+
+Assumptions can also be used to ``delete'' or deactivate clauses:
+\vspace{-0.5em}
+\begin{enumerate}
+    \item extend temporary clauses with an activation variable $a$: $(a \vee l_1 \vee \dots \vee l_n)$.
+    \item solve the formula under the assumption of $\neg a$; this forces the clause to be satisfied by one of the $l_i$ literals (activating the clause)
+    \item once the clause is no longer needed, add a permanent unit clause $(a)$. Boolean Constraint Propagation (BCP) on the root-level will trivially satisfy the clause, and the next garbage collection can delete it (NB: can impact solver performance)
+\end{enumerate}
+
+\paragraph{Example.}
+Consider the formula:
+$$ F = (a \vee b) \wedge (a \vee \neg c) \wedge (\neg b \vee d) $$
+
+We can query the incremental solver with temporary assumptions:
+\begin{enumerate}
+    \item \textit{query 1:} "is $F$ satisfiable?"
+    \begin{itemize}
+        \item \textit{result:} SAT (e.g., $a=\top, b=\top, c=\bot, d=\top$)
+    \end{itemize}
+    
+    \item \textit{query 2:} "is $F$ satisfiable assuming specific literals (e.g., $\neg a, \neg b, c$) are true?"
+    \begin{itemize}
+        \item \textit{result:} UNSAT; $a=\bot$ forces $b=\top$ via the first clause, which conflicts with $b=\bot$
+        \item \textit{UNSAT core:} the solver returns the specific subset of assumptions responsible for the conflict (e.g., $\{\neg a, \neg b\}$)
+    \end{itemize}
+    
+\item \textit{query 3:} "Is $F$ satisfiable assuming $c$ is true?"
+    \begin{itemize}
+        \item \textit{result:} SAT;
+    \end{itemize}
+\end{enumerate}
+
+
+\begin{gframe}{Incremental BMC Example}
+Using the 2-bit counter:
+\begin{enumerate}
+    \item partially encode the initial state $I(s_0)$
+    \item assume the bad state $B(s_0)$ and solve; if unsat, extract the core
+    \item add the transition relation $\mathcal{t}(s_0, s_1)$ permanently
+    \item assume the bad state $B(s_1)$ and solve again
+    \item repeat until the solver returns SAT
+\end{enumerate}
+\end{gframe}
+
+\subsubsection{Handling of assumptions}
 
 \chapter{Algebraic Reasoning}
 \chapter{Program Analysis}
