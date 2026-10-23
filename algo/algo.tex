@@ -268,9 +268,22 @@ If a language is defined by a polynomial-time predicate $R$, we can artificially
 
 Through this padding mechanism, the lower classes are subsumed by the intersection of the higher classes.
 
-\subsection{Absorption}
+\subsection{The Quantifier Form and Absorption Rule}
+
+\begin{cframe}{ColorLemma}{The Quantifier Form}
+    To define a language $L$ using the quantifier form, it is necessary to provide the statement, sizes, predicate, and class: 
+    \begin{enumerate}
+        \item \textbf{statement}: explicitly state $x \in L \iff Q_1 u$ (what $u$ is, its size) $Q_2 v$ (what $v$ is, its size): $R(x, u, v)$, written in words (e.g., ``there is a \dots such that for every \dots'')
+        \item \textbf{sizes}: state that each object is bounded by an explicit polynomial in $|x|$\\
+        \textcolor{gray}{(N.B: a condition that is part of the question, e.g. ``the set has at least $k$ vertices'', is checked inside $R$; it is not a size bound.)}
+        \item \textbf{predicate}: state that $R$ is decidable in polynomial time, providing the reason
+        \item \textbf{class}: read off the prefix: $\exists \to \text{NP}$, $\forall \to \text{coNP}$, $\exists\forall \to \Sigma_2$, $\forall\exists \to \Pi_2$
+    \end{enumerate}
+\end{cframe}
+
+
 Not every $\forall $ or $\exists  $ statement creates a new hierarchy level:
-\begin{cframe}{ColorLemma}{The absorb rule}
+\begin{cframe}{ColorThm}{The absorb rule}
 The absorb rule dictates that if the candidate space for a quantifier is small enough that it can be listed and checked in polynomial time (e.g., checking every node in a graph), that quantifier is "absorbed" directly into the polynomial-time predicate $R$ (and it is called a \textbf{loop}). 
 
 A quantifier only remains in the prefix - and thus pushes the problem to a higher complexity class - if it iterates over an exponentially large candidate space, e.g. all possible $2^n$ Boolean truth assignments 
