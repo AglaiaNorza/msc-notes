@@ -6,8 +6,8 @@ the collection of my notes for the MSc Logic and AI at TU Wien !
 | [Logic and Computation](../../raw/main/LoCo/LoCo.pdf) (LoCo)| WIP |
 | [Formal Methods in Systems Engineering](../../raw/main/FORSYTE/forsyte.pdf) (FORSYTE) | WIP |
 |[Computer-Aided Verification](../../raw/main/CAV/CAV.pdf) (CAV) | WIP|
+|[Algorithmics](../../raw/main/algo/algo.pdf)) |WIP| 
 |Discrete Mathematics |☒ |
-|Algorithmics |☒| 
 
 > they're here mainly here because i strongly believe in open knowledge
  

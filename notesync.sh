@@ -16,6 +16,9 @@ notes["$base/CAV/cav.pdf"]="CAV/CAV.pdf"
 notes["$base/LoCo/loco.pdf"]="LoCo/LoCo.pdf"
 notes["$base/LoCo/loco.tex"]="LoCo/LoCo.tex"
 
+notes["$base/algo/algo.pdf"]="algo/algo.pdf"
+notes["$base/algo/algo.tex"]="algo/algo.tex"
+
 
 for file in "${!notes[@]}"; do
     cp "$file" "$dest/${notes[$file]}" || { echo "$file failed"; exit 1; }

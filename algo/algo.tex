@@ -1,0 +1,403 @@
+%! TEX program = xelatex
+\documentclass[a4paper, 11pt]{report} 
+
+\usepackage{/home/aglaia/Documents/latex-setup/packages/packs}
+\usepackage{/home/aglaia/Documents/latex-setup/packages/macros}
+\usepackage{/home/aglaia/Documents/latex-setup/packages/mainstyle} 
+\usepackage{/home/aglaia/Documents/latex-setup/packages/colors}    
+\usepackage{/home/aglaia/Documents/latex-setup/packages/frameboxes} 
+\usepackage{/home/aglaia/Documents/latex-setup/packages/title}
+
+
+\setuniversity{Technische Universität Wien}
+\setcoursename{Algorithmics}
+\setcoursebook{slides}
+\setauthorname{aglaia norza}
+\setauthoremail{norzaglaia@gmail.com}
+\setauthorgithub{AglaiaNorza}
+
+\setcoverphoto{cover-meme}
+
+\setcoverwidth{0.9\textwidth}
+\setcoverheight{0.6\textwidth}
+\setbeforespace{2.5em}
+\setafterspace{4em}
+
+
+\begin{document}
+
+\makecustomcover
+
+\tableofcontents
+\clearpage
+
+\chapter{Computational Complexity (Cheat Sheet)}
+
+\section{P and NP}
+\begin{defframe}{The class NP}{}
+There are two ways to define the complexity class NP:
+\begin{enumerate}
+    \item NP is the set of decision problems \textit{solvable} in polynomial time by a \textit{nondeterministic} Turing machine
+    \item NP is the set of decision problems \textit{verifiable} in polynomial time by a \textit{deterministic} Turing machine:
+        \begin{itemize}
+            \item that is, $L \in \text{NP}$ if there are a polynomial $p$ and a polynomial-time verifier $V$ such that for every $x$:
+        $$x \in L \iff \exists u \text{ with } |u|\leq p(|x|) \text{ s.t. } V(x, u)=\text{accept}$$
+        \end{itemize}
+\end{enumerate}
+\end{defframe}
+
+\begin{cframe}{ColorLemma}{Showing $L \in$ NP}
+    \vspace{-1em}
+    \begin{enumerate}
+        \item define the certificate $u$ (the proposed solution)
+        \item show that $|u| \leq $ a polynomial in the input length $|x|$ (NB: remember to count bits - $n$ vertices take up $n \log n$ bits, not $n$)
+        \item explain the mechanism of the verifier $V(x, u)$
+        \item confirm that the running time of the verifier is polynomial in $|x|$
+        \item prove both directions of correctness:
+            \begin{itemize}
+                \item explain why the verifier accepts a YES-instance
+                \item explain why the verifier rejects a NO-instance (it cannot loop !)
+
+                    or, assume that the verifier accepts some certificate $u$, and prove that $x$ must be a YES-instance
+            \end{itemize}
+    \end{enumerate}
+\end{cframe}
+
+\begin{defframe}{Karp Reduction}{}
+    A polynomial-time Karp reduction translates an instance of problem $A$ into an instance of problem $B$. Upper bounds transfer from $B$ to $A$, meaning if $B \in P$, then $A \in P$. Conversely, hardness transfers from $A$ to $B$ (if $A \leq_{p} B $ and $A \not\in P$, $B \not\in P$). 
+
+    Reductions are also transitive, meaning if $A \leq_{p}B $ and $B \leq_{p} C$, then $A \leq_{p} C$.
+
+We have that $A \leq_{p} B$ iff there is a polynomial function $f$ such that, for every string $x$:
+$$x \in A \iff f(x) \in B$$
+\end{defframe}
+
+\begin{cframe}{ColorLemma}{Showing $A \leq_{p} B$}
+    \begin{enumerate}
+        \item define the function $f(\text{instance of } A) = \text{instance of } B$, which must be computed from the instance alone
+        \item state the size of $f(x)$ and the cost of computing it, in terms of $|x|$
+        \item correctness ($\implies $): prove that if $x$ is a YES-instance of $A$, then $f(x)$ is a YES-instance of $B$ (typically involves constructing a solution for $f(x)$ from a solution of $x$)
+        \item correctness ($\impliedby $): prove that if $f(x)$ is a YES-instance of $B$, then $x$ is a YES-instance of $A$ (typically involves recovering a solution for $x$ from a solution of $f(x)$)
+            
+            or, do the contrapositive: if $x$ is a NO-instance of $A$, then $f(x)$ is a NO-instance of $B$
+    \end{enumerate}
+\end{cframe}
+
+The core reductions covered in the course are:
+\begin{itemize}
+\item \textbf{Logic to logic:} $\text{SAT} \le_p \text{NAE-SAT}$
+    \begin{itemize}
+        \item \textit{Reduction by symmetry breaking:} pick a fresh variable $s$ and append it to every clause: $(\ell_1 \lor \dots \lor \ell_r) \mapsto (\ell_1, \dots, \ell_r, s)$.
+        \begin{itemize}
+            \item NAE has flip symmetry: if $\beta$ satisfies, flipping all values $\beta'$ also satisfies.
+            \item the shared $s$ acts as a reference anchor: without loss of generality, take the solution where $s = \text{false}$.
+            \item since $s$ guarantees the required false in every clause, the clause is NAE-satisfied if and only if at least one original literal $\ell_i$ is true (which is the standard SAT condition)
+        \end{itemize}
+    \end{itemize}
+\item \textbf{logic to graphs:} $\text{3-SAT} \le_p \text{CLIQUE}$
+    \begin{itemize}
+        \item for a formula with $m$ clauses:
+        \begin{itemize}
+            \item create 3 vertices per clause (one per literal occurrence), put an edge between two vertices iff they are in different clauses and consistent ($u \neq \neg v$), set target clique size $k = m$
+            \item since there are no edges within the same clause, a clique of size $m$ must pick exactly one literal per clause; because edges only connect non-contradictory literals, picking an $m$-clique never selects both $x_i$ and $\neg x_i$, directly defining a valid satisfying truth assignment
+        \end{itemize}
+    \end{itemize}
+\item \textbf{graph to graph:} $\text{CLIQUE} \le_p \text{INDEPENDENT SET} \le_p \text{VERTEX COVER}$
+
+    \begin{itemize}
+        \item $\text{CLIQUE} \le_p \text{IS}$:
+        \begin{itemize}
+            \item \textit{map:} $(G, k) \mapsto (\overline{G}, k)$, where $\overline{G}$ is the complement graph
+            \item a subset $S \subseteq V$ forms a clique in $G$ (all pairs connected) $\iff$ $S$ is an independent set in $\overline{G}$ (no pairs connected)
+        \end{itemize}
+        \item $\text{IS} \le_p \text{VC}$:
+        \begin{itemize}
+            \item \textit{map:} $(G, k) \mapsto (G, |V| - k)$ (flip the target size)
+            \item $S$ is an independent set $\iff V \setminus S$ is a vertex cover: since no edge can have both endpoints in $S$, every edge must touch at least one vertex in $V \setminus S$; thus, an IS of size $\ge k$ exists $\iff$ a VC of size $\le |V| - k$ exists
+        \end{itemize}
+    \end{itemize}
+
+\item \textbf{Logic to Coloring:} $\text{NAE-3-SAT} \le_p \text{3-COLORING}$
+    \begin{itemize}
+        \item \textit{Construction / Gadgets:}
+        \begin{itemize}
+            \item have a neutral vertex $B$ (assigned color \textit{base}; remaining two colors represent \textit{true} and \textit{false}).
+            \item for each variable $x$, connect $x$ and $\neg x$ to each other and both to $B$ (forming a triangle with $B$); for each clause $(\ell_1, \ell_2, \ell_3)$, create a fresh triangle $u_1, u_2, u_3$ and add edges $(u_1, \ell_1)$, $(u_2, \ell_2)$, and $(u_3, \ell_3)$
+            \item connecting every literal to $B$ forces all literals to take colors from $\{\text{true}, \text{false}\}$, with $x$ and $\neg x$ having opposite colors.
+            \item the triangle $\{u_1, u_2, u_3\}$ requires all 3 colors.
+            \begin{itemize}
+                \item if $\ell_1, \ell_2, \ell_3$ are all equal (all true or all false), that color is blocked for all $u_i$, leaving only 2 available colors for a 3-cycle (impossible to 3-color).
+                \item if $\ell_1, \ell_2, \ell_3$ are not all equal, the three colors $\{\text{true}, \text{false}, B\}$ can always be validly assigned to $\{u_1, u_2, u_3\}$.
+            \end{itemize}
+        \end{itemize}
+    \end{itemize}
+
+\end{itemize}
+
+\begin{defframe}{Gadgets}{}
+Often, pieces of the target problem (e.g., a subgraph) can be designed to simulate a specific component of the source problem (e.g., a variable or a clause)
+\begin{enumerate}
+    \item \textbf{choice gadget:} how do you represent a boolean variable making a choice (True/False)?
+    \begin{itemize}
+        \item \textit{example:} in mapping to $\text{3-COLORING}$, a variable $x$ is represented by a pair of adjacent vertices ($x$ and $\neg x$) that are both connected to a universal "Base" vertex; the Base takes one color, forcing $x$ and $\neg x$ to take the remaining two colors (representing True and False)
+    \end{itemize}
+    \item \textbf{constraint gadget:} how do you enforce the rules of the source problem (e.g., "at least one literal must be true")?
+    \begin{itemize}
+        \item \textit{example:} build a small subgraph connecting the literal vertices of a clause to a target vertex; the subgraph's edges are designed so that the whole gadget is only valid (e.g., fully colorable) if the inputs satisfy the source problem's specific rule
+    \end{itemize}
+\end{enumerate}
+\end{defframe}
+
+\section{Space Classes (L and NL)}
+
+\begin{defframe}{The Classes L and NL}{}
+Instead of bounding time, we bound the memory (space) used on the work tape. The input tape is read-only, and we only count the memory used on the read/write work tape.
+
+\begin{itemize}
+    \item \textbf{L (log-space):} the set of decision problems solvable by a \textit{deterministic} Turing machine using $O(\log|x|)$ space
+    \item \textbf{NL (nondeterministic log-space):} the set of decision problems solvable by a \textit{nondeterministic} Turing machine using $O(\log|x|)$ space
+\end{itemize}
+\textbf{Savitch / Immerman-Szelepcsényi:} $\text{NL} = \text{coNL}$.
+\end{defframe}
+
+\begin{cframe}{ColorLemma}{Showing $L \in \text{L}$ or $\text{NL}$}
+To show a problem is in L or NL, define an algorithm and prove it uses logarithmic space
+    \begin{enumerate}
+        \item write the algorithm as a numbered list.
+        \item list exactly what the work tape needs to hold (e.g., counters, vertex indices, pointers).
+        \item write out the exact bit size for each variable, and show that the sum of all bit sizes is bounded by $O(\log|x|)$
+        \begin{itemize}
+            \item \textit{Note:} a vertex index out of $n$ vertices takes $\lceil \log_2 n \rceil$ bits; a counter up to $n$ takes $\lceil \log_2 n \rceil$ bits
+        \end{itemize}
+    \end{enumerate}
+\end{cframe}
+
+\begin{defframe}{Log-space Reductions ($A \leq_{L} B$)}{}
+A log-space reduction from $A$ to $B$ is a deterministic algorithm that computes a mapping function $f$, transforming an instance of $A$ into an instance of $B$, using only $O(\log|x|)$ work-tape space. 
+\end{defframe}
+
+\begin{cframe}{ColorLemma}{Showing $A \leq_{L} B$}
+    \vspace{-1em}
+    \begin{enumerate}
+        \item define $f(\text{instance of } A) = \text{instance of } B$, computed deterministically.
+        \item state the variables needed to compute the map and their bit sizes, showing the sum is $O(\log|x|)$. (Do not count the space used to write the output, only the work tape).
+        \item correctness ($\implies$): prove that if $x$ is a YES-instance of $A$, then $f(x)$ is a YES-instance of $B$
+    \item crrectness ($\impliedby$): prove that if $f(x)$ is a YES-instance of $B$, then $x$ is a YES-instance of $A$ (or prove the contrapositive for NO-instances)
+    \end{enumerate}
+\end{cframe}
+
+\paragraph{Problems in L}
+\begin{itemize}
+    \item \textbf{BALANCED PARENTHESES:} given a string over '(' and ')', are they properly balanced? (uses a counter to track the current depth).
+    \item \textbf{PALINDROME:} given a string, is it equal to its reverse? (uses two pointers)
+    \item \textbf{EVEN-DEGREE:} given an undirected graph, does every vertex have an even degree? (uses a counter to iterate over edges for each vertex)
+    \item \textbf{UNDIRECTED PATH:} given an undirected graph and vertices $s, t$, is there a path from $s$ to $t$? (the directed version is NL-complete !)
+\end{itemize}
+
+
+\paragraph{Problems in NL}
+\begin{itemize}
+    \item \textbf{PATH (NL-Complete):} given a directed graph and vertices $s, t$, is there a directed path from $s$ to $t$? \textit{(canonical NL-complete problem; NL-hardness proofs start by reducing from PATH, often using configuration graphs)}
+    \item \textbf{STRONG-CONNECTIVITY:} given a directed graph, is there a directed path between every pair of vertices?
+    \item \textbf{CYCLE-THROUGH:} given a directed graph and a vertex $v$, is there a directed cycle containing $v$?
+    \item \textbf{2-SAT and 2-UNSAT:} is a given 2-CNF formula satisfiable/unsatisfiable? (building an implication graph and searching for a directed path from a literal $x$ to $\neg x$ and vice versa)
+\end{itemize}
+
+\section{The polynomial hierarchy}
+The polynomial hierarchy (PH) generalizes the complexity classes P, NP and coNP by classifying computational problems based on the number of alternating quantifiers required to verify their solutions.
+
+\textcolor{gray}{(In standard NP, a non-deterministic machine guesses one certificate and checks it in polynomial time. The polynomial hierarchy extends this by allowing multiple, alternating phases of guessing. Each phase represents a shift in the logical burden of proof - from "does there exist?" ($\exists$) to "is it true for all?" ($\forall$). The number of times this burden shifts dictates the problem's level in the hierarchy.)}
+
+The base of every problem in the polynomial hierarchy is the polynomial-time predicate $R$
+
+\begin{defframe}{Polynomial-time predicate}{}
+A \textbf{polynomial-time predicate} $R(x, u_{1}, \dots, u_{k})$ is a condition on strings that a polynomial-time algorithm checks.
+\begin{itemize}
+    \item $u_{i}$ are the certificates (guesses or moves generated by the quantifiers)
+    \item the length of every $u_{i}$ needs to be bounded by some polynomial relative to the size of the input $x$ ($|u_{i}| \leq p(|x|)$)
+    \item $R$ then evaluates the conditions and outputs true/false in polynomial time
+\end{itemize}
+\end{defframe}
+
+The classes of PH depend on the quantifier structure of the problem:
+
+\begin{defframe}{Quantifier block}{}
+    A block is a \textit{maximal run of equal quantifiers}. Two quantifiers of the same kind in a row are one block, since a pair of strings is one string; the \textit{quantifier level} counts blocks.
+\end{defframe}
+
+\begin{cframe}{ColorLemma}{The class $\Sigma_{k}$}{}
+    A language $L$ belongs in the class $\Sigma_{k}$ if its defining logical statement starts with an existential quantifier, and has exactly $k-1$ alternations.
+    \begin{itemize}
+        \item e.g. $x \in L \in \Sigma_{3} \iff \exists u_1 \forall u_2 \exists u_3 : R(x, u_1, u_2, u_3)$.
+    \end{itemize}
+\end{cframe}
+
+\begin{itemize}
+    \item We have that $\Sigma_{1} =$ NP !
+\end{itemize}
+
+\begin{cframe}{ColorThm}{The class $\Pi_{k}$}{}
+A language $L$ belongs in the class $\Pi_{k}$ if its defining logical statement starts with a universal quantifier, and has exactly $k-1$ alternations.
+    \begin{itemize}
+        \item e.g. $x \in L \in \Pi_{2} \iff \forall u_1 \exists u_2 : R(x, u_1, u_2)$.
+    \end{itemize}
+
+$\Pi_{k}$ is the complement of $\Sigma_{k}$): $\Pi_{i} = \{L : \bar{L} \in \Sigma_{i}\}$ (negating the satatement swaps every $\exists  $ with a $\forall  $)
+\end{cframe}
+
+\begin{itemize}
+    \item We have that $\Pi_{1} =$ coNP !
+\end{itemize}
+
+\subsection{The Hierarchy Ladder}
+We have that:
+$$\Sigma_i \cup \Pi_i \subseteq \Sigma_{i+1} \cap \Pi_{i+1}$$
+, which means that any language in $\Sigma_i$ or $\Pi_i$ is also contained within both classes of the next level up ($\Sigma_{i+1}$ and $\Pi_{i+1}$). This is proven by adding a ``dummy'' quantifier.
+
+If a language is defined by a polynomial-time predicate $R$, we can artificially introduce a new quantifier over a variable $v$ that $R$ completely ignores. Because the verifier never evaluates $v$, the truth value of the statement is unchanged, but the formula gains the extra alternation required to place it in a higher class.
+
+\begin{itemize}
+\item moving from $\Sigma_1$ to $\Sigma_2$ ($\exists \forall$): 
+    \subitem suppose $L \in \Sigma_1$ (NP), defined as $x \in L \iff \exists u : R(x, u)$. 
+    
+    we can rewrite this as $x \in L \iff \exists u \forall v : R'(x, u, v)$, where $R'$ executes $R(x,u)$ and ignores $v$ - the problem is now technically in $\Sigma_2$
+    
+\item moving from $\Sigma_1$ to $\Pi_2$ ($\forall \exists$):
+    \subitem using the same $L \in \Sigma_1$, we can alternatively pad the front of the statement: $x \in L \iff \forall v \exists u : R'(x, u, v)$, where $R'$ again ignores $v$ - the problem is now technically in $\Pi_2$.
+\end{itemize}
+
+Through this padding mechanism, the lower classes are subsumed by the intersection of the higher classes.
+
+\subsection{Absorption}
+Not every $\forall $ or $\exists  $ statement creates a new hierarchy level:
+\begin{cframe}{ColorLemma}{The absorb rule}
+The absorb rule dictates that if the candidate space for a quantifier is small enough that it can be listed and checked in polynomial time (e.g., checking every node in a graph), that quantifier is "absorbed" directly into the polynomial-time predicate $R$ (and it is called a \textbf{loop}). 
+
+A quantifier only remains in the prefix - and thus pushes the problem to a higher complexity class - if it iterates over an exponentially large candidate space, e.g. all possible $2^n$ Boolean truth assignments 
+\end{cframe}
+
+\paragraph{Example: INDEPENDENT SET.}
+Consider the problem: \textit{is there a set $S \subseteq V$ with $|S| \ge k$, such that there are no edges inside $S$?}
+
+The logical statement is: \textit{there exists} ($\exists$) a set $S \subseteq V$ with $|S| \ge k$ such that \textit{for every pair} ($\forall$) $\{a, b\} \subseteq S$, $ab \notin E$.
+
+\begin{itemize}
+    \item The $\exists$ block remains: thge candidate space for $S$ is $2^n$ (all possible subsets of $n$ vertices). Because this scales exponentially, a deterministic machine cannot check all possibilities in polynomial time: the quantifier block remains.
+    \item The $\forall$ block is absorbed: once a specific candidate set $S$ is handed to the verifier, the inner condition checks ``for every pair''. The maximum number of vertex pairs in $S$ is bounded by $n^2$. Therefore, the machine simply runs a nested loop over the pairs to check the adjacency list. The $\forall$ quantifier is \textbf{absorbed} into the deterministic polynomial-time predicate $R$.
+\end{itemize}
+
+Therefore, the problem is in $\Sigma_1 = $ NP.
+
+
+To understand complete problems for the polynomial hierarchy, we use Quantified Boolean Formulas, which are the natural extension of the standard Boolean satisfiability problem (SAT).
+
+\begin{defframe}{}{}
+A quantified Boolean formula is typically written in prenex form (meaning all quantifiers are pulled to the front) followed by a quantifier-free Boolean formula called the matrix ($\psi$).
+$$Q_1x_1 Q_2x_2 \dots Q_qx_q [\psi]$$
+\begin{itemize}
+    \item where each $Q_{i}$ is a quantifier ($\exists  $ or $\forall  $)
+\end{itemize}
+
+The formula is fully quantified, meaning every variable in the matrix $\psi$ is bound by a quantifier (so the entire formula is either true or false).
+\end{defframe}
+
+Just as SAT is complete for NP, specific formats of QBFs act as the canonical complete problems for every level of the hierarchy.
+
+\begin{itemize}
+    \item $\Sigma_2\text{-SAT}$: "given a formula $\exists X \forall Y [\psi]$, is it true?" is a complete problem for $\Sigma_2$. 
+        \subitem the matrix $\psi$ must be an unrestricted Boolean formula: if $\psi$ were in CNF, the $\forall Y$ check could be evaluated clause by clause, and the complexity would drop down to NP
+    \item $\Pi_2\text{-SAT}$: "given a formula $\forall X \exists Y [\psi]$, is it true?" is $\Pi_2$-complete, and it remains complete even if $\psi$ is in CNF
+\end{itemize}
+
+\subsection{The class DP}
+The class DP sits just above NP and coNP, but below the second level of the polynomial hierarchy ($\Sigma_2 \cap \Pi_2$). It captures problems that require solving an NP question and a coNP question simultaneously.
+
+\begin{defframe}{DP}{}
+    A language belongs to DP if it is the intersection of two languages over the same instances: one from NP, and one from coNP:
+ $$\text{DP} = \{L_1 \cap L_2 : L_1 \in \text{NP}, L_2 \in \text{coNP}\}$$
+\end{defframe}
+
+N.B.: the class DP is different from NP $\cap $ coNP, which represents the class of single languages that have both a fast yes and a fast no verifier
+\begin{itemize}
+    \item actually, DP = NP $\cap$ coNP if and only if NP = coNP
+\end{itemize}
+
+\begin{cframe}{ColorLemma}{Showing $L \in$ DP}
+    To show that a language $L$ is in DP, you must split its defining condition into two independent halves. 
+
+    \textcolor{gray}{For example: ``exactly one solution'' becomes ``there is one'' and ``there are no two''. ``The optimum is exactly $k$'' becomes ``at least $k$'' and ``not at least $k + 1$'' (minimizing: ``at most $k$'' and ``not at most $k - 1$'').}
+    \begin{enumerate}
+        \item \textbf{define the two halves}: explicitly define language $L_1$ (the ``at least'' or existence condition) and language $L_2$ (the ``not more than'' or uniqueness condition)
+        \item \textbf{show the intersection}: formally state that a string $x \in L$ if and only if $x \in L_1 \cap L_2$
+        \item \textbf{prove $L_1 \in \text{NP}$}: define the certificate for $L_1$ (e.g., a solution of size $k$) and state that it is polynomially bounded and can be verified in polynomial time
+        \item \textbf{prove $L_2 \in \text{coNP}$} (usually by proving that $\overline{L_2}$ is in NP);
+    \end{enumerate}
+\end{cframe}
+
+\section{The Class PSPACE}
+
+\begin{defframe}{PSPACE}{}
+PSPACE is the class of decision problems solvable by a deterministic Turing machine using a polynomial amount of memory space.
+
+Formally, it is defined as PSPACE $= \bigcup_{k \ge 1} \text{SPACE}(|x|^k)$. 
+
+A fundamental property of space complexity (Savitch's Theorem) is that $\text{PSPACE} = \text{NPSPACE}$.
+\end{defframe}
+
+\begin{itemize}
+    \item While $\text{PH}$ restricts problems to a constant, fixed number of quantifier alternations, PSPACE allows for an unbounded number of alternations (up to a polynomial limit). Consequently, the entire Polynomial Hierarchy is contained within PSPACE ($\text{PH} \subseteq \text{PSPACE}$).
+
+    \item PSPACE captures the complexity of adversarial two-player games: any two-player game with board positions of polynomial size and a polynomially bounded maximum number of moves belongs in PSPACE. The nested alternating quantifiers ($\exists \forall \exists \forall \dots$) model the ``if I move here, and you move there...'' search required to determine a guaranteed winning strategy
+\end{itemize}
+
+  \paragraph{The Complete Problem (TQBF):} the problem of determining if a True Quantified Boolean Formula (TQBF) is true is PSPACE-complete. An instance of TQBF is a fully quantified Boolean formula $Q_1 x_1 \dots Q_q x_q [\psi]$. 
+
+\begin{itemize}
+    \item unlike $\Sigma_k\text{-SAT}$, which is capped at $k$ quantifier blocks, the number of quantifiers $q$ in TQBF can grow linearly with the input size.
+\end{itemize}
+
+  TQBF can be evaluated in polynomial space using a recursive algorithm. The algorithm evaluates each quantifier $Q_i x_i$ by testing both possible values of $x_i$ (True and False). Because it can completely erase and reuse memory from the true branch when checking the false branch, the maximum memory required scales linearly with the recursion depth, keeping it in polynomial space.
+
+\section{The Exponential Classes}
+These classes scale time and space bounds to the exponential level, dealing with problems where the input size allows for massive computational resources.
+
+\begin{defframe}{The classes}{}
+    \begin{itemize}
+        \item $\text{EXP} = \bigcup_{k \ge 1} \text{TIME}(2^{|x|^k})$
+        \item $\text{NEXP} = \bigcup_{k \ge 1} \text{NTIME}(2^{|x|^k})$
+            
+    \subitem kust as $\text{NP}$ uses polynomially bounded certificates, $\text{NEXP}$ can be viewed through a certificate lens: a language $L \in \text{NEXP}$ if there are certificates of exponential size (up to $2^{|x|^c}$) that can be verified by a deterministic algorithm in time polynomial to the \textit{certificate's} size (which is exponential relative to the original input $x$)
+        \item $\text{EXPSPACE} = \bigcup_{k \ge 1} \text{SPACE}(2^{|x|^k})$
+    \end{itemize}
+\end{defframe}
+
+A key concept at the exponential level is how data representation affects complexity. A \textbf{succinct} representation compresses an exponentially large structure into a small input. 
+\begin{itemize}
+    \item \textbf{succinct graphs:} instead of listing all edges of an explicit graph, a succinct graph uses a Boolean circuit $C$, which takes two $b$-bit vertex IDs and outputs 1 if there is an edge, and 0 otherwise
+    \subitem because the input $C$ is exponentially smaller than the explicit graph it represents, asking standard questions about the graph causes an exponential blowup in complexity:
+    \begin{itemize}
+        \item a problem in $\text{P}$ on an explicit graph becomes $\text{EXP}$-complete for a succinct graph
+        \item a problem in $\text{NP}$ on an explicit graph (e.g., Hamiltonian Path) becomes $\text{NEXP}$-complete for a succinct graph
+    \end{itemize}
+\end{itemize}
+
+
+\paragraph{Padding Arguments: Upward Translation}
+Padding is a proof technique demonstrating that a collapse at a lower complexity class triggers a collapse at a higher exponential class. The core mechanism involves artificially inflating the size of an input string to shift the problem into a lower complexity class relative to its new size.
+
+\begin{cframe}{ColorLemma}{The Padding Mechanism}
+    \begin{enumerate}
+        \item  Consider a language $L \in \text{NEXP}$        \item Create a new ``padded'' language $L'$ by appending dummy symbols to each input $x$ until the new length is $N = 2^{|x|^k}$
+        \item  The original non-deterministic algorithm still takes $N$ steps to evaluate the unpadded prefix $x$. Because $N$ steps is polynomial relative to the massive new input size $N$, the padded language $L'$ is structurally in $\text{NP}$
+        \item If we assume $\text{P} = \text{NP}$, then $L'$ must be in $\text{P}$. To decide the original $x$, a deterministic machine simply writes out the pad (taking $2^{|x|^k}$ steps) and runs the $\text{P}$ algorithm on $L'$ (taking $2^{O(|x|^k)}$ steps). This proves $L \in \text{EXP}$
+    \end{enumerate}
+\end{cframe}
+
+Through padding, equalities carry upward, but inequalities carry downward via their contrapositive:
+\begin{itemize}
+    \item $\text{P} = \text{NP} \implies \text{EXP} = \text{NEXP}$.
+    \item $\text{NP} = \text{coNP} \implies \text{NEXP} = \text{coNEXP}$.
+    \item $\text{EXP} \neq \text{NEXP} \implies \text{P} \neq \text{NP}$
+\end{itemize}
+
+\end{document}
