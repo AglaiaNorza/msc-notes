@@ -166,11 +166,794 @@ A key feature of Natural Deduction is the ability to temporarily assume a hypoth
 \end{center}
  
 \begin{itemize}
-    \item[($\neg e$)] To prove that $A$ is false ($\neg A$), we assume the opposite: that $A$ is true; if calculating from this assumption leads to a logical absurdity or contradiction ($\bot$), we can conclude $\neg A$ and discharge the assumption $[A]$
+    \item[($\neg i$)] To prove that $A$ is false ($\neg A$), we assume the opposite: that $A$ is true; if calculating from this assumption leads to a contradiction ($\bot$), we can conclude $\neg A$ and discharge the assumption $[A]$
 
 \item[(RAA)] (Similar to negation introduction, but used to prove a positive statement $A$). We assume its negation, $\neg A$: if this leads to a contradiction ($\bot$), we conclude that $A$ must be true, discharging the assumption $[\neg A]$
     \subitem \color{gray}this rule distinguishes Classical Logic from Intuitionistic Logic !
 \end{itemize}
+
+
+\section{Hilbert Systems}
+The idea behind Hilbert systems (or Axiomatic systems) is to only use one rule, \textit{Modus Ponens}:
+\begin{prooftree}
+    \AxiomC{$A$}
+    \AxiomC{$A \to B$}
+    \BinaryInfC{$B$}
+\end{prooftree}
+
+To these systems introduce many \textit{axioms}, particular WFFs assumed to be true.
+
+\begin{gframe}{Intuitive properties expressed as axioms}
+By assuming both implication elimination $(\to e)$ and implication introduction $(\to i)$:
+\begin{align*}
+    (\to e) & \quad A, A \to B \vdash B \\
+    (\to i) & \quad \text{if } A \vdash B \text{ then } \vdash A \to B
+\end{align*}
+we obtain the equivalence $A \vdash B \iff \; \vdash A \to B$. 
+
+Consequently, any intuitive deduction property expressed via turnstiles can be transformed into a pure implication statement (axiom schema):
+$$
+    A_1, \dots, A_n \vdash A_{n+1} \implies \; \vdash A_1 \to (A_2 \to (\dots \to (A_n \to A_{n+1}) \dots ))
+$$
+\end{gframe}
+
+The objective of a Hilbert system is to eliminate the rule $(\to i)$.
+
+\begin{defframe}{Derivation in a Hilbert System}{}
+A \textit{derivation} (or proof) of $\Gamma \vdash A$ in a Hilbert system $\mathcal{H}$ is a tree rooted in $A$ such that:
+\begin{itemize}
+    \item its \textbf{leaves} are either instances of axiom schemas in $\mathcal{H}$ or formulas belonging to $\Gamma$
+    \item its \textbf{internal nodes} are obtained from previous nodes or leaves exclusively via \textit{Modus Ponens} ($MP$)
+\end{itemize}
+\end{defframe}
+
+\subsection{Elimination of $(\to i)$ and the Deduction Theorem}
+Eliminating $(\to i)$ is justified by proving the Deduction Theorem:
+\begin{thmframe}{Deduction Theorem}{}
+    \vspace{-1em}
+$$
+    \text{If } A \vdash B, \text{ then } \vdash A \to B.
+$$
+\end{thmframe}
+\begin{proofframe}{}{}
+Assuming a proof of $A \vdash B$ that uses $MP$ as its only inference rule, we proceed by induction on the number of $MP$ applications, $\#(MP)$:
+
+\begin{itemize}
+    \item \textbf{base case ($\#(MP) = 0$):} no applications of $MP$.
+    \begin{itemize}
+        \item case $A = B$: requires introducing the identity axiom schema:
+        \[
+            (I) \quad A \to A
+        \]
+        \item case $B$ is an axiom (or $B \in \Gamma$): requires introducing the weakening axiom schema:
+        \[
+            (K) \quad B \to (A \to B)
+        \]
+    \end{itemize}
+
+    \item \textbf{inductive step ($\#(MP) = n + 1$):}
+
+        $A \vdash B$ was derived from $A \vdash C \to B$ and $A \vdash C$.
+
+
+    By the induction hypothesis, we have $\vdash A \to (C \to B)$ and $\vdash A \to C$. To infer $\vdash A \to B$, we add the distribution axiom schema:
+    \[
+        (S) \quad (A \to (C \to B)) \to ((A \to C) \to (A \to B))
+    \]
+\end{itemize}
+\end{proofframe}
+
+\subsection{Axiom Schemas}
+To represent all standard connectives using Modus Ponens, we can adopt the following axiom schemata:
+
+\begin{itemize}
+    \item \textbf{conjunction ($\wedge$):}
+    \begin{align*}
+        (\wedge e) & \quad A_1 \wedge A_2 \to A_k \quad (k = 1, 2) \\
+        (\wedge i) & \quad A \to (B \to A \wedge B)
+    \end{align*}
+    \item \textbf{disjunction ($\vee$):}
+    \begin{align*}
+        (\vee i) & \quad A_k \to A_1 \vee A_2 \quad (k = 1, 2) \\
+        (\vee e) & \quad (A \to C) \to ((B \to C) \to (A \vee B \to C))
+    \end{align*}
+    \item \textbf{false ($\bot$) and negation ($\neg$):}
+    \begin{align*}
+        (\bot e) & \quad \bot \to A \\
+        (\neg i) & \quad (A \to \bot) \to \neg A \\
+        (\neg e) & \quad A \to (\neg A \to \bot) \\
+        (\text{RAA}) & \quad (\neg A \to \bot) \to A
+    \end{align*}
+    \item \textbf{implication ($\to$):}
+    \begin{align*}
+        (K) & \quad B \to (A \to B) \\
+        (S) & \quad (A \to (C \to B)) \to ((A \to C) \to (A \to B))
+    \end{align*}
+\end{itemize}
+
+\section{Equivalence between Natural Deduction and Hilbert Systems}
+
+\begin{thmframe}{}{}
+For any set of formulas $\Gamma$ and formula $P$, Natural Deduction (ND) and Hilbert Systems (HS) are equivalent:
+\[
+    \Gamma \vdash_{\text{ND}} P \iff \Gamma \vdash_{\text{HS}} P
+\]
+\end{thmframe}
+
+\begin{proofframe}{}{}
+    \vspace{-1em}
+\paragraph{Direction ($\impliedby$):} it is sufficient to show that all axiom schemas of $\text{HS}$ are derivable as theorems in $\text{ND}$. 
+        
+        Since Modus Ponens in $\text{HS}$ corresponds directly to $(\to e)$ in $\text{ND}$, any derivation in $\text{HS}$ can be mimicked in $\text{ND}$.
+    
+    \vspace{-1em}
+    \paragraph{Direction ($\implies$):} by induction on the depth of the derivation tree for $\Gamma \vdash_{\text{ND}} P$:
+    \begin{itemize}
+        \item \textbf{base case ($\text{depth} 1$):} $P \in \Gamma$, which immediately yields $\Gamma \vdash_{\text{HS}} P$
+        \item \textbf{inductive step:} assume the claim holds for all derivation trees of depth $\le n$; we proceed by case analysis on the last inference rule applied in $\text{ND}$:
+        
+        \begin{itemize}
+            \item \textbf{case $(\wedge e_1)$:} The last step is $\frac{A \wedge B}{A}$. 
+
+                By the inductive hypothesis, $\Gamma \vdash_{\text{HS}} A \wedge B$. Since $(A \wedge B) \to A$ is an axiom schema in $\text{HS}$, applying Modus Ponens yields $\Gamma \vdash_{\text{HS}} A$.
+            
+            \item \textbf{case $(\vee e)$:} The last step derives $C$ from premises $A \vee B$, $A \vdash C$, and $B \vdash C$.
+            \begin{enumerate}
+                \item by the I.H., $\Gamma \vdash_{\text{HS}} A \vee B$, $\Gamma, A \vdash_{\text{HS}} C$, and $\Gamma, B \vdash_{\text{HS}} C$.
+                \item applying the Deduction Theorem (DT) to the latter two gives $\Gamma \vdash_{\text{HS}} A \to C$ and $\Gamma \vdash_{\text{HS}} B \to C$.
+                \item using the disjunction elimination axiom schema:
+                \[
+                    \vdash_{\text{HS}} (A \to C) \to ((B \to C) \to ((A \vee B) \to C))
+                \]
+                \item applying Modus Ponens three times using $\Gamma \vdash_{\text{HS}} A \to C$, $\Gamma \vdash_{\text{HS}} B \to C$, and $\Gamma \vdash_{\text{HS}} A \vee B$ yields $\Gamma \vdash_{\text{HS}} C$
+            \end{enumerate}
+        \end{itemize}
+\end{itemize}
+\end{proofframe}
+
+\section{Sequent Calculus}
+Sequent Calculus differs from Natural Deduction and Hilbert Systems in two main ways:
+\begin{itemize}
+    \item rules apply not to formulae, but to \textbf{sequents} (derivability assertions)
+    \item rules can only \textit{introduce} and not eliminate connectives
+\end{itemize}
+
+A sequent is of the form:
+$$A_{1}, \dots, A_{n} \vdash B$$
+which can be read as "from the premises $A_{1}, \dots, A_{n}$ follows the conclusion $B$".
+
+\begin{gframe}{Some terminology}
+\begin{itemize}
+    \item \textbf{contexts:} the sets of formulas (like $\Gamma$ or $\Delta$) carried through the rules without being directly modified
+    \item \textbf{cut formula:} the formula that is eliminated when applying a cut rule
+    \item \textbf{principal formula:} the new formula introduced by a logical rule
+    \item \textbf{active formulas:} the sub-formulas in the premises that are combined to build the principal formula
+\end{itemize}
+\end{gframe}
+
+\subsection{Sequent Calculus (LJ) Rules}
+Sequent calculus has four types of rules: axioms, the cut rule, logical and structural rules.
+
+\subsubsection*{Structural Rules}
+Structural rules manipulate the context (the sets of formulas surrounding the active formulas) rather than the logical connectives.
+
+\begin{center}
+\AxiomC{$\Gamma, B, A, \Delta \vdash C$}
+\RightLabel{(exchange,l)}
+\UnaryInfC{$\Gamma, A, B, \Delta \vdash C$}
+\DisplayProof
+\qquad
+\AxiomC{$\Gamma, A, A, \Delta \vdash C$}
+\RightLabel{(contraction,l)}
+\UnaryInfC{$\Gamma, A, \Delta \vdash C$}
+\DisplayProof
+\end{center}
+
+\begin{center}
+\AxiomC{$\Gamma \vdash B$}
+\RightLabel{(weakening,l)}
+\UnaryInfC{$\Gamma, A \vdash B$}
+\DisplayProof
+\qquad
+\AxiomC{$\Gamma \vdash $}
+\RightLabel{(weakening,r)}
+\UnaryInfC{$\Gamma \vdash B$}
+\DisplayProof
+\end{center}
+
+\begin{itemize}
+    \item[(w)] you can add extra unused assumptions on the left, or drop to an empty conclusion on the right, without invalidating an already proven sequent
+\end{itemize}
+
+\subsubsection*{Logical Rules}
+As mentioned, Sequent Calculus rules only \textit{introduce} connectives, either on the left (manipulating premises) or on the right (manipulating conclusions).
+
+\paragraph{Conjunction ($\wedge$)}
+\begin{center}
+\AxiomC{$\Gamma, A_i \vdash C$}
+\RightLabel{$(\wedge, l)_i$}
+\UnaryInfC{$\Gamma, A_1 \wedge A_2 \vdash C$}
+\DisplayProof
+\qquad
+\AxiomC{$\Gamma \vdash A$}
+\AxiomC{$\Gamma \vdash B$}
+\RightLabel{$(\wedge, r)$}
+\BinaryInfC{$\Gamma \vdash A \wedge B$}
+\DisplayProof
+\end{center}
+\begin{itemize}
+    \item[$(\wedge, l)_i$] if $C$ can be derived using just one of the conjuncts $A_i$ alongside the context $\Gamma$, it can also be derived when the full conjunction $A_1 \wedge A_2$ is in the premises
+    \item[$(\wedge, r)$] to prove a conjunction $A \wedge B$ from context $\Gamma$, you must independently prove both $A$ and $B$
+\end{itemize}
+
+\paragraph{Disjunction ($\vee$)}
+\begin{center}
+\AxiomC{$\Gamma, A \vdash C$}
+\AxiomC{$\Gamma, B \vdash C$}
+\RightLabel{$(\vee, l)$}
+\BinaryInfC{$\Gamma, A \vee B \vdash C$}
+\DisplayProof
+\qquad
+\AxiomC{$\Gamma \vdash A_i$}
+\RightLabel{$(\vee, r)_i$}
+\UnaryInfC{$\Gamma \vdash A_1 \vee A_2$}
+\DisplayProof
+\end{center}
+\begin{itemize}
+    \item[$(\vee, l)$] to prove $C$ from a disjunction $A \vee B$, you must explore both cases: showing that $C$ follows from assuming $A$, and separately from assuming $B$
+    \item[$(\vee, r)_i$] proving just one of the disjuncts $A_i$ from the context is enough to construct the full disjunction on the right
+\end{itemize}
+
+\paragraph{Implication ($\rightarrow$)}
+\begin{center}
+\AxiomC{$\Gamma, B \vdash C$}
+\AxiomC{$\Gamma \vdash A$}
+\RightLabel{$(\rightarrow, l)$}
+\BinaryInfC{$\Gamma, A \rightarrow B \vdash C$}
+\DisplayProof
+\qquad
+\AxiomC{$\Gamma, A \vdash B$}
+\RightLabel{$(\rightarrow, r)$}
+\UnaryInfC{$\Gamma \vdash A \rightarrow B$}
+\DisplayProof
+\end{center}
+\begin{itemize}
+    \item[$(\rightarrow, l)$] to use an implication $A \rightarrow B$ from your premises to prove $C$, you must first be able to prove its condition $A$ from your context, and then show that the consequence $B$ successfully leads to $C$
+    \item[$(\rightarrow, r)$] to prove $A \rightarrow B$, you temporarily add $A$ to your context $\Gamma$ and use it to derive $B$
+\end{itemize}
+
+\paragraph{Negation ($\neg$)}
+\begin{center}
+\AxiomC{$\Gamma \vdash A$}
+\RightLabel{$(\neg, l)$}
+\UnaryInfC{$\Gamma, \neg A \vdash $}
+\DisplayProof
+\qquad
+\AxiomC{$\Gamma, A \vdash $}
+\RightLabel{$(\neg, r)$}
+\UnaryInfC{$\Gamma \vdash \neg A$}
+\DisplayProof
+\end{center}
+\begin{itemize}
+    \item[$(\neg, l)$] if you can prove $A$ from the context $\Gamma$, then adding the premise $\neg A$ creates a contradiction (represented by an empty right side)
+    \item[$(\neg, r)$] if adding $A$ to your premises leads to an empty conclusion (a contradiction), you can deduce $\neg A$ on the right
+\end{itemize}
+
+\subsubsection*{The Cut Rule}
+\begin{center}
+\AxiomC{$\Gamma \vdash A$}
+\AxiomC{$\Gamma, A \vdash B$}
+\RightLabel{(cut)}
+\BinaryInfC{$\Gamma \vdash B$}
+\DisplayProof
+\end{center}
+
+The cut rule acts as a mechanism for using intermediate lemmas: if you can prove $A$ from your context $\Gamma$, and you can use $A$ alongside $\Gamma$ to prove $B$, you can deduce $B$ directly from $\Gamma$ by ``cutting'' out the intermediate formula $A$.
+
+\begin{thmframe}{Cut-elimination}{}
+Any proof using the (cut) rule can be transformed into a proof without it.
+\end{thmframe}
+
+\subsection{Soundness, Completeness and Classical Logic}
+The Sequent Calculus LJ is sound and complete for Intuitionistic Logic.
+
+Furthermore, aside from the CUT rule, the following holds:
+\begin{lemmaframe}{Subformula Property}{}
+    Everything that appears in the rules' premises appears in their conclusions.
+\end{lemmaframe}
+
+To obtain a calculus for Classical Logic, we need to introduce an axiom or rule that corresponds to Reductio Ad Absurdum. 
+
+For example, we could introduce a rule like:
+\begin{center}
+\AxiomC{$\Gamma, \neg A \vdash $}
+\RightLabel{(RAA)}
+\UnaryInfC{$\Gamma \vdash A$}
+\DisplayProof
+\end{center}
+However, this is problematic because the premise contains more connectives than the conclusion. We do not want this, because the premises must be subformulas of the conclusions to maintain the subformula property.
+
+Alternatively, we could add the Law of Excluded Middle as an axiom ($\vdash A \vee \neg A$), but then we would \underline{have} to use the CUT rule to make use of it in proofs.
+
+Instead, the solution is to consider sequents that allow \textbf{many premises} \textit{and} \textbf{many conclusions}:
+$$A_1, \dots, A_n \vdash B_1, \dots, B_m$$
+In this structure, the formulas on the left side ($A_i$) are implicitly connected by AND, while the formulas on the right side ($B_j$) are implicitly connected by OR. 
+
+As a consequence of having multiple conclusions, the structural rules must now apply to both the left and the right sides of the turnstile.
+
+\subsection{Rules of Sequent Calculus $LK'$}
+In $LK'$, structural rules operate symmetrically on both the left and right sides of the sequent.
+
+\subsubsection*{Structural Rules}
+\begin{center}
+\AxiomC{$\Gamma, B, A, \Delta' \vdash \Delta$}
+\RightLabel{$(e,l)$}
+\UnaryInfC{$\Gamma, A, B, \Delta' \vdash \Delta$}
+\DisplayProof
+\qquad
+\AxiomC{$\Gamma \vdash \Delta, B, A, \Delta'$}
+\RightLabel{$(e,r)$}
+\UnaryInfC{$\Gamma \vdash \Delta, A, B, \Delta'$}
+\DisplayProof
+\end{center}
+
+\begin{center}
+\AxiomC{$\Gamma, A, A \vdash \Delta$}
+\RightLabel{$(c,l)$}
+\UnaryInfC{$\Gamma, A \vdash \Delta$}
+\DisplayProof
+\qquad
+\AxiomC{$\Gamma \vdash \Delta, A, A$}
+\RightLabel{$(c,r)$}
+\UnaryInfC{$\Gamma \vdash \Delta, A$}
+\DisplayProof
+\end{center}
+
+\begin{center}
+\AxiomC{$\Gamma \vdash \Delta$}
+\RightLabel{$(w,l)$}
+\UnaryInfC{$\Gamma, A \vdash \Delta$}
+\DisplayProof
+\qquad
+\AxiomC{$\Gamma \vdash \Delta$}
+\RightLabel{$(w,r)$}
+\UnaryInfC{$\Gamma \vdash \Delta, A$}
+\DisplayProof
+\end{center}
+
+This calculus also has exchange, contraction and weakening rules.
+
+\subsubsection*{Logical Rules}
+
+\paragraph{Conjunction ($\wedge$)}
+\begin{center}
+\AxiomC{$\Gamma, A_i \vdash \Delta$}
+\RightLabel{$(\wedge, l)_i$}
+\UnaryInfC{$\Gamma, A_1 \wedge A_2 \vdash \Delta$}
+\DisplayProof
+\qquad
+\AxiomC{$\Gamma \vdash A, \Delta$}
+\AxiomC{$\Gamma \vdash B, \Delta$}
+\RightLabel{$(\wedge, r)$}
+\BinaryInfC{$\Gamma \vdash A \wedge B, \Delta$}
+\DisplayProof
+\end{center}
+
+\begin{itemize}
+    \item[$(\wedge, l)_i$] having $A_1 \wedge A_2$ as a premise allows extracting either $A_1$ or $A_2$ to prove $\Delta$
+\end{itemize}
+
+\paragraph{Disjunction ($\vee$)}
+\begin{center}
+\AxiomC{$\Gamma, A \vdash \Delta$}
+\AxiomC{$\Gamma, B \vdash \Delta$}
+\RightLabel{$(\vee, l)$}
+\BinaryInfC{$\Gamma, A \vee B \vdash \Delta$}
+\DisplayProof
+\qquad
+\AxiomC{$\Gamma \vdash A_i, \Delta$}
+\RightLabel{$(\vee, r)_i$}
+\UnaryInfC{$\Gamma \vdash A_1 \vee A_2, \Delta$}
+\DisplayProof
+\end{center}
+
+\begin{itemize}
+    \item[$(\vee, r)_i$] proving any one disjunct $A_i$ suffices to establish the disjunction $A_1 \vee A_2$ on the right
+\end{itemize}
+
+\paragraph{Implication ($\rightarrow$)}
+\begin{center}
+\AxiomC{$\Gamma, B \vdash \Delta$}
+\AxiomC{$\Gamma \vdash A, \Delta$}
+\RightLabel{$(\rightarrow, l)$}
+\BinaryInfC{$\Gamma, A \rightarrow B \vdash \Delta$}
+\DisplayProof
+\qquad
+\AxiomC{$\Gamma, A \vdash B, \Delta$}
+\RightLabel{$(\rightarrow, r)$}
+\UnaryInfC{$\Gamma \vdash A \rightarrow B, \Delta$}
+\DisplayProof
+\end{center}
+
+
+\paragraph{Negation ($\neg$)}
+\begin{center}
+\AxiomC{$\Gamma \vdash A, \Delta$}
+\RightLabel{$(\neg, l)$}
+\UnaryInfC{$\Gamma, \neg A \vdash \Delta$}
+\DisplayProof
+\qquad
+\AxiomC{$\Gamma, A \vdash \Delta$}
+\RightLabel{$(\neg, r)$}
+\UnaryInfC{$\Gamma \vdash \neg A, \Delta$}
+\DisplayProof
+\end{center}
+
+\begin{itemize}
+    \item[$(\neg, l)$] assuming $\neg A$ on the left is equivalent to adding $A$ as an alternative target on the right
+    \item[$(\neg, r)$] to prove $\neg A$ on the right, move $A$ into the premises on the left
+\end{itemize}
+
+\subsection{Formulation Variants: from $LK'$ to $LK$}
+In another version of this calculus, $LK$, the single-formula rules $(\wedge, l)_i$ and $(\vee, r)_i$ are replaced by multi-formula versions that introduce both components at once:
+
+\begin{center}
+\AxiomC{$\Gamma, A_1, A_2 \vdash \Delta$}
+\RightLabel{$(\wedge, l)$}
+\UnaryInfC{$\Gamma, A_1 \wedge A_2 \vdash \Delta$}
+\DisplayProof
+\qquad
+\AxiomC{$\Gamma \vdash A_1, A_2, \Delta$}
+\RightLabel{$(\vee, r)$}
+\UnaryInfC{$\Gamma \vdash A_1 \vee A_2, \Delta$}
+\DisplayProof
+\end{center}
+
+\begin{cframe}{ColorLemma}{Equivalence of $LK'$ and $LK$ Rule Formulations}
+By using structural rules (weakening and contraction), the single-formula indexed rules and the multi-formula rules are completely inter-derivable:
+
+\begin{itemize}
+    \item \textit{multi-formula $(\wedge, l) \implies$ single-formula $(\wedge, l)_i$:}
+    \subitem given $\Gamma, A_1 \vdash \Delta$, apply weakening $(w,l)$ to get $\Gamma, A_1, A_2 \vdash \Delta$, then apply $(\wedge, l)$ to get $\Gamma, A_1 \wedge A_2 \vdash \Delta$
+    
+    \item \textit{single-formula $(\wedge, l)_i \implies$ multi-formula $(\wedge, l)$:}
+    \subitem given $\Gamma, A_1, A_2 \vdash \Delta$, apply $(\wedge, l)_1$ to get $\Gamma, A_1 \wedge A_2, A_2 \vdash \Delta$, then $(\wedge, l)_2$ to get $\Gamma, A_1 \wedge A_2, A_1 \wedge A_2 \vdash \Delta$, and finally contraction $(c,l)$ to obtain $\Gamma, A_1 \wedge A_2 \vdash \Delta$:
+    
+    \begin{center}
+    \AxiomC{$\Gamma, A_1, A_2 \vdash \Delta$}
+    \RightLabel{$(\wedge, l)_1$}
+    \UnaryInfC{$\Gamma, A_1 \wedge A_2, A_2 \vdash \Delta$}
+    \RightLabel{$(\wedge, l)_2$}
+    \UnaryInfC{$\Gamma, A_1 \wedge A_2, A_1 \wedge A_2 \vdash \Delta$}
+    \RightLabel{$(c,l)$}
+    \UnaryInfC{$\Gamma, A_1 \wedge A_2 \vdash \Delta$}
+    \DisplayProof
+    \end{center}
+\end{itemize}
+An identical argument holds for $(\vee, r)_i$ and $(\vee, r)$ using $(w,r)$ and $(c,r)$.
+\end{cframe}
+
+\begin{gframe}{Example Derivations in $LK$}
+\begin{center}
+\AxiomC{$A \vdash A$}
+\RightLabel{$(\neg, r)$}
+\UnaryInfC{$\vdash A, \neg A$}
+\RightLabel{$(\vee, r)_1$}
+\UnaryInfC{$\vdash A \vee \neg A, \neg A$}
+\RightLabel{$(\vee, r)_2$}
+\UnaryInfC{$\vdash A \vee \neg A, A \vee \neg A$}
+\RightLabel{$(c,r)$}
+\UnaryInfC{$\vdash A \vee \neg A$}
+\DisplayProof
+\end{center}
+the proof duplicates the target formula on the right via contraction $(c,r)$, enabling both sides of the disjunction to be constructed independently.
+
+\begin{center}
+\AxiomC{$A \vdash A$}
+\RightLabel{$(\neg, l)$}
+\UnaryInfC{$A, \neg A \vdash $}
+\RightLabel{$(\wedge, l)$}
+\UnaryInfC{$A \wedge \neg A \vdash $}
+\RightLabel{$(\neg, r)$}
+\UnaryInfC{$\vdash \neg(A \wedge \neg A)$}
+\DisplayProof
+\end{center}
+\end{gframe}
+
+\subsection{Soundness and Completeness of $LK$}
+
+\begin{thmframe}{Soundness of $LK$}{}
+If $\Gamma \vdash \Delta$ is derivable, then $\Gamma \models \Delta$.
+\end{thmframe}
+\begin{proofframe}{}{}
+By induction on the length of the derivation. For each rule, if an interpretation $v$ validates its premises, then it validates its conclusion. Axioms $A \vdash A$ are trivially valid ($A \models A$). Because all rules preserve validity, the end sequent must be valid.
+\end{proofframe}
+
+\begin{thmframe}{Completeness of $LK$}{}
+If $\Gamma \models \Delta$, then $\Gamma \vdash \Delta$ is derivable.
+\end{thmframe}
+\begin{proofframe}{}{}
+For each rule, if an interpretation $v$ validates its conclusion, it also validates its premises. This means the logical rules of $LK$ are invertible. Assuming $\Gamma \models \Delta$, applying the rules backwards (bottom-up) will eventually yield valid atomic sequents $\Gamma_i \vdash \Delta_i$, which can be derived using axioms and structural rules.
+\end{proofframe}
+
+\begin{gframe}{Corollaries of Completeness}
+\begin{itemize}
+    \item \textbf{contraction rules} are redundant
+    \item \textbf{weakening rules} are redundant if the axioms are sequents $\Gamma \vdash \Delta$ where $\Gamma \cap \Delta \neq \emptyset$
+    \item the \textbf{(cut) rule} is redundant (cut-admissibility)
+\end{itemize}
+\end{gframe}
+
+\subsection{Application: Using $LK$ to find CNF}
+LK can be used to transform a formula $P$ into an equivalent formula $P_{CNF}$ in Conjunctive Normal Form.
+
+If $P$ is not valid, the derivation will yield leaves $A_1, \dots, A_m \vdash B_1, \dots, B_n$ that are not axioms. $P$ is logically equivalent to the conjunction of all such unprovable leaves:
+$$ \neg A_1 \vee \dots \vee \neg A_m \vee B_1 \vee \dots \vee B_n $$
+
+\section{Equivalence between Hilbert Systems and Sequent Calculus}
+
+\begin{thmframe}{}{}
+For any set of formulas $\Gamma$ and formula $P$:
+\[
+    \Gamma \vdash_{\text{HS}} P \iff \Gamma \vdash_{\text{SC}} P
+\]
+\end{thmframe}
+\begin{proofframe}{}{}
+    \vspace{-1em}
+\paragraph{Direction ($\implies$):} it is sufficient to prove that all HS axioms are theorems in SC, and that Modus Ponens can be simulated. Modus Ponens translates to an application of the $(\rightarrow, l)$ rule combined with the cut rule.
+    \vspace{-1em}
+\paragraph{Direction ($\impliedby$):} by induction on the depth of the derivation $\Gamma \vdash_{\text{SC}} P$; the logical rules of SC are simulated in HS using the Deduction Theorem (DT) and corresponding HS axioms, similarly to the equivalence proof for Natural Deduction
+\end{proofframe}
+
+\section{First-Order Logic in Natural Deduction}
+
+\subsection{Intuitive Properties of Quantifiers}
+\begin{itemize}
+    \item $(\forall e) \quad \forall x A(x) \vdash A[t/x]$
+    \item $(\forall i) \quad \text{if } \Gamma \vdash A[y/x] \text{ then } \Gamma \vdash \forall x A(x)$ \quad (where $y$ does not appear free in $\Gamma$)
+    \item $(\exists i) \quad A[t/x] \vdash \exists x A(x)$
+    \item $(\exists e) \quad \text{if } \Gamma, A[y/x] \vdash C \text{ then } \Gamma, \exists x A(x) \vdash C$ \quad (where $y$ does not appear free in $\Gamma$ or $C$)
+\end{itemize}
+
+\subsection{Natural Deduction Rules for Quantifiers}
+
+\begin{center}
+\AxiomC{$A[y/x]$}
+\RightLabel{$(\forall i)$}
+\UnaryInfC{$\forall x A$}
+\DisplayProof
+\qquad
+\AxiomC{$\forall x A$}
+\RightLabel{$(\forall e)$}
+\UnaryInfC{$A[t/x]$}
+\DisplayProof
+\end{center}
+
+\begin{center}
+\AxiomC{$A[t/x]$}
+\RightLabel{$(\exists i)$}
+\UnaryInfC{$\exists x A$}
+\DisplayProof
+\qquad
+\AxiomC{$\exists x A$}
+\AxiomC{$[A[y/x]]$}
+\noLine
+\UnaryInfC{$\vdots$}
+\noLine
+\UnaryInfC{$C$}
+\RightLabel{$(\exists e)$}
+\BinaryInfC{$C$}
+\DisplayProof
+\end{center}
+
+\begin{itemize}
+    \item[$(\forall i)$] the eigenvariable $y$ must not appear free in any of the undischarged assumptions on which $A[y/x]$ depends (i.e., any non-canceled leaves of the subtree rooted in $A[y/x]$)
+    \item[$(\exists e)$] the eigenvariable $y$ must not appear free in $C$, nor in any undischarged assumptions of the subtree rooted in $C$ (other than the temporary assumption $A[y/x]$)
+\end{itemize}
+
+\section{FOL in Sequent Calculus}
+
+To extend the propositional Sequent Calculus $LK$ to First-Order Logic, we add specific rules for the universal ($\forall$) and existential ($\exists$) quantifiers. 
+
+\subsection{Quantifier Rules in $LK$}
+A naive formulation of the quantifier rules can lead to issues with invertibility and infinite proof search branches. To solve this, the rules for introducing quantifiers that instantiate terms ($\forall l$ and $\exists r$) are designed to retain the principal quantified formula in the premises.
+
+\begin{center}
+\AxiomC{$\Gamma, A(y) \vdash \Delta$}
+\RightLabel{$(\exists l)^*$}
+\UnaryInfC{$\Gamma, \exists x A(x) \vdash \Delta$}
+\DisplayProof
+\qquad
+\AxiomC{$\Gamma \vdash A(t), \exists x A(x), \Delta$}
+\RightLabel{$(\exists r)$}
+\UnaryInfC{$\Gamma \vdash \exists x A(x), \Delta$}
+\DisplayProof
+\end{center}
+
+\begin{center}
+\AxiomC{$\Gamma, A(t), \forall x A(x) \vdash \Delta$}
+\RightLabel{$(\forall l)$}
+\UnaryInfC{$\Gamma, \forall x A(x) \vdash \Delta$}
+\DisplayProof
+\qquad
+\AxiomC{$\Gamma \vdash A(y), \Delta$}
+\RightLabel{$(\forall r)^*$}
+\UnaryInfC{$\Gamma \vdash \forall x A(x), \Delta$}
+\DisplayProof
+\end{center}
+
+\begin{itemize}
+    \item[*] in the rules $(\exists l)$ and $(\forall r)$, the variable $y$ must be an eigenvariable, meaning it does not appear free in $\Gamma \cup \Delta$.
+    \item by keeping $\forall x A(x)$ in the premise of $(\forall l)$ and $\exists x A(x)$ in the premise of $(\exists r)$, we ensure that the quantifier rules remain invertible during proof search, allowing the same quantified formula to be instantiated multiple times with different terms if necessary
+\end{itemize}
+
+\subsection{Proof Search and Completeness}
+
+\begin{gframe}{Algorithm for Proof Search}
+Given a sequent $\Gamma \vdash \Delta$, the proof search algorithm proceeds as follows:
+\begin{enumerate}
+    \item try to apply logical (or quantifier) rules backward to the first compound formula of $\Gamma$ (for odd steps) and $\Delta$ (for even steps)
+    \item generated auxiliary formulas are added to the end of the context
+    \item the terms of the language are enumerated. When applying $(\forall l)$ or $(\exists r)$, select the first term in the enumeration that has not yet been chosen.
+\end{enumerate}
+The algorithm stops on a branch if it encounters a \textbf{success} (the sequent is an Axiom) or a \textbf{failure} (the sequent is of the form $\Pi \vdash \Sigma$, where $\Pi$ and $\Sigma$ contain only atomic formulas and $\Pi \cap \Sigma = \emptyset$).
+\end{gframe}
+
+\begin{thmframe}{Completeness of First-Order $LK$}{}
+    $\Gamma \models \Delta \implies \Gamma \vdash \Delta$
+\end{thmframe}
+\begin{proofframe}{}{}
+    \vspace{-1em}
+Applying the proof search algorithm yields either a closed proof tree ($\Gamma \vdash \Delta$) or a tree with at least one failure/infinite branch ($\Gamma \not\models \Delta$). 
+    
+If there is an infinite branch, we extract a \textit{canonical interpretation} (countermodel) out of it. The domain $D_{\mathcal{A}}$ consists of all terms in the language. We assign truth values to atomic formulas based on their presence in the left-hand side of the sequents in the infinite branch. 
+
+Using the concept of witnesses (formulas evaluated to false in the premise that trace back to the conclusion), it can be shown that assuming $\Gamma \models \Delta$ alongside an infinite failure branch leads to a contradiction, proving that a valid sequent must produce a finite, closed proof tree.
+\end{proofframe}
+
+\begin{cframe}{ColorLemma}{Immediate Consequences}
+\begin{itemize}
+    \item First-order classical logic is consistent.
+    \item The $LK$ calculus is complete even without the structural rules of contraction and cut
+    \subitem cut and contraction are \textit{admissible rules} (adding them does not change the set of provable sequents)
+\end{itemize}
+\end{cframe}
+
+\todo[inline]{add examples}
+
+\section{Summary / Cheat Sheet}
+
+\subsection*{The Three Systems}
+
+\begin{itemize}
+    \item \textbf{Natural Deduction (ND):}    
+        \begin{itemize}
+        \item  No axioms. Focuses on \textit{introduction} ($i$) and \textit{elimination} ($e$) rules for connectives
+        \item key element: \textit{assumptions}; you can temporarily assume a formula to explore a logical path, and then discharge it later (e.g., assuming $A$ to prove $B$, then discharging $A$ to conclude $A \to B$).
+    \end{itemize}
+    
+    \item \textbf{Hilbert Systems (HS):}
+    \begin{itemize}
+        \item Only one rule of inference (\textit{Modus Ponens}). Everything else is handled by Axiom Schemas.
+        \item Horrible for writing manual proofs, but great for meta-logic and reasoning about the system (only one rule to check in inductive proofs)
+    \end{itemize}
+
+    \item \textbf{Sequent Calculus (SC):}
+    \begin{itemize}
+        \item Operates on sequents ($\Gamma \vdash \Delta$) rather than bare formulas. 
+        \item Connectives are never eliminated, only introduced (either on the Left or the Right of the turnstile). Also features structural rules (weakening, contraction, exchange) to manage the contexts.
+    \end{itemize}
+\end{itemize}
+
+\subsection*{Classical vs. Intuitionistic Logic}
+How do you upgrade a constructive/intuitionistic system to a Classical one?
+\begin{itemize}
+    \item \textit{natural deduction:} add the RAA rule. (Assuming $\neg A$ yields $\bot \implies$ conclude $A$).
+    \item \textit{sequent calculus:} move from $LJ$ to $LK$; allow multiple formulas on the right of the turnstile. This implicitly encodes the Law of Excluded Middle, as the right side represents a disjunction (OR).
+\end{itemize}
+
+\subsection*{FOL-specific}
+When dealing with Quantifiers ($\forall, \exists$), be acareful about the \textbf{eigenvariables} !!!
+\begin{itemize}
+    \item when generalizing a universal ($\forall i$ in ND, $\forall r$ in SC) or unpacking an existential ($\exists e$ in ND, $\exists l$ in SC), the variable $y$ must be fresh (an eigenvariable). It cannot appear free in your active assumptions/context (\textit{you can't claim something is true for "all $x$" if you rely on a specific $x$ to prove it.})
+    \item in $LK$, the rules $(\forall l)$ and $(\exists r)$ keep the quantified formula in the premise
+    \subitem (to prove something like $\exists x A(x)$, you might need to instantiate $x$ multiple times with different terms)
+\end{itemize}
+
+\subsubsection*{Eigenvariable Horrors}
+
+The freshness constraint on eigenvariables is what prevents proof systems from proving logical fallacies. Violating it allows proving false statements like "if one number is even, all numbers are even."
+
+\subsubsection*{Generalizing over a specific assumption}
+
+\textbf{fallacy:} $p(y) \vdash \forall x p(x)$ \quad (\textit{"assuming $y$ is even, every number $x$ is even"})
+
+\begin{itemize}
+    \item \textbf{Natural Deduction (ND):}
+\end{itemize}
+\begin{center}
+\AxiomC{$P(y)$}
+\RightLabel{$(\forall i)$ \textbf{\textcolor{red}{[INVALID!]}}}
+\UnaryInfC{$\forall x P(x)$}
+\RightLabel{$(\to i)$}
+\UnaryInfC{$P(y) \to \forall x P(x)$}
+\DisplayProof
+\end{center}
+\textit{violation:} $y$ is free in the active assumption $P(y)$.
+
+\begin{itemize}
+    \item \textbf{Sequent Calculus ($LK$):}
+\end{itemize}
+\begin{center}
+\AxiomC{$P(y) \vdash P(y)$}
+\RightLabel{$(\forall r)$ \textbf{\textcolor{red}{[INVALID!]}}}
+\UnaryInfC{$P(y) \vdash \forall x P(x)$}
+\DisplayProof
+\end{center}
+\textit{violation:} $y$ is free in the left context $\Gamma = \{P(y)\}$.
+
+\vspace{0.5em}
+\textbf{why:} 
+the rule $(\forall i)$ requires $y$ to be an \textit{arbitrary} element. But here, $y$ is constrained by the active assumption $P(y)$ (it is a specific $y$ that satisfies $P$). 
+Semantically, if $P(x)$ means "$x$ is even" over $\mathbb{N}$, assuming $P(2)$ is true, but concluding $\forall x P(x)$ asserts that \textit{every} natural number is even, which is false.
+
+---
+
+\subsubsection*{Witness Out of Scope}
+
+\textbf{fallacy:} $\exists x p(x) \vdash \forall x p(x)$ \quad (\textit{"if there exists a prime number, then all numbers are prime"})
+
+\begin{itemize}
+    \item \textbf{Natural Deduction (ND):}
+\end{itemize}
+\begin{center}
+\AxiomC{$\exists x P(x)$}
+\AxiomC{$[P(y)]^1$}
+\RightLabel{$(\exists e)^1$ \textbf{\textcolor{red}{[INVALID!]}}}
+\BinaryInfC{$P(y)$}
+\RightLabel{$(\forall i)$}
+\UnaryInfC{$\forall x P(x)$}
+\DisplayProof
+\end{center}
+\textit{violation:} $y$ appears free in the conclusion $C = P(y)$ of the $(\exists e)$ step
+
+\begin{itemize}
+    \item \textbf{Sequent Calculus ($LK$):}
+\end{itemize}
+\begin{center}
+\AxiomC{$P(y) \vdash P(y)$}
+\RightLabel{$(\exists l)$ \textbf{\textcolor{red}{[INVALID!]}}}
+\UnaryInfC{$\exists x P(x) \vdash P(y)$}
+\RightLabel{$(\forall r)$}
+\UnaryInfC{$\exists x P(x) \vdash \forall x P(x)$}
+\DisplayProof
+\end{center}
+\textit{violation:} $y$ is free in the right context $\Delta = \{P(y)\}$ when applying $(\exists l)$
+
+\vspace{0.5em}
+\textbf{why:}
+the variable $y$ inside an existential elimination acts like a local variable, an unknown witness. 
+
+In ND, $(\exists e)$ requires that the conclusion $C$ does not contain $y$ free, ensuring $y$ stays inside its local scope. By choosing $C = P(y)$, the witness $y$ "escapes" its scope into the main derivation line. Once outside, it is no longer bound to any assumption, allowing a subsequent $(\forall i)$ step to incorrectly claim that $P$ holds for \textit{all} $x$.
+
+\paragraph{Rule Equivalences}
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Goal} & \textbf{Natural Deduction} & \textbf{Sequent Calculus ($LK$)} \\
+\hline
+use an "if-then" statement & implication elimination $(\to e)$ & left implication $(\to l)$ \\
+\hline
+prove an "if-then" statement & implication intro $(\to i)$ & right implication $(\to r)$ \\
+\hline
+use a fact & modus ponens / $(\to e)$ & the cut rule (admissible) \\
+\hline
+explore cases of an "or" & disjunction elimination $(\vee e)$ & left disjunction $(\vee l)$ \\
+\hline
+prove by contradiction & raa & right side of turnstile ($\Delta$) \\
+\hline
+\end{tabular}
+\end{center}
 
 
 \end{document}
