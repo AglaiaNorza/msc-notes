@@ -594,8 +594,8 @@ This calculus also has exchange, contraction and weakening rules.
     \item[$(\neg, r)$] to prove $\neg A$ on the right, move $A$ into the premises on the left
 \end{itemize}
 
-\subsection{Formulation Variants: from $LK'$ to $LK$}
-In another version of this calculus, $LK$, the single-formula rules $(\wedge, l)_i$ and $(\vee, r)_i$ are replaced by multi-formula versions that introduce both components at once:
+\subsection{Formulation Variants: from $LK'$ to LK}
+In another version of this calculus, LK, the single-formula rules $(\wedge, l)_i$ and $(\vee, r)_i$ are replaced by multi-formula versions that introduce both components at once:
 
 \begin{center}
 \AxiomC{$\Gamma, A_1, A_2 \vdash \Delta$}
@@ -609,7 +609,7 @@ In another version of this calculus, $LK$, the single-formula rules $(\wedge, l)
 \DisplayProof
 \end{center}
 
-\begin{cframe}{ColorLemma}{Equivalence of $LK'$ and $LK$ Rule Formulations}
+\begin{cframe}{ColorLemma}{Equivalence of $LK'$ and LK Rule Formulations}
 By using structural rules (weakening and contraction), the single-formula indexed rules and the multi-formula rules are completely inter-derivable:
 
 \begin{itemize}
@@ -633,7 +633,7 @@ By using structural rules (weakening and contraction), the single-formula indexe
 An identical argument holds for $(\vee, r)_i$ and $(\vee, r)$ using $(w,r)$ and $(c,r)$.
 \end{cframe}
 
-\begin{gframe}{Example Derivations in $LK$}
+\begin{gframe}{Example Derivations in LK}
 \begin{center}
 \AxiomC{$A \vdash A$}
 \RightLabel{$(\neg, r)$}
@@ -660,20 +660,20 @@ the proof duplicates the target formula on the right via contraction $(c,r)$, en
 \end{center}
 \end{gframe}
 
-\subsection{Soundness and Completeness of $LK$}
+\subsection{Soundness and Completeness of LK}
 
-\begin{thmframe}{Soundness of $LK$}{}
+\begin{thmframe}{Soundness of LK}{}
 If $\Gamma \vdash \Delta$ is derivable, then $\Gamma \models \Delta$.
 \end{thmframe}
 \begin{proofframe}{}{}
 By induction on the length of the derivation. For each rule, if an interpretation $v$ validates its premises, then it validates its conclusion. Axioms $A \vdash A$ are trivially valid ($A \models A$). Because all rules preserve validity, the end sequent must be valid.
 \end{proofframe}
 
-\begin{thmframe}{Completeness of $LK$}{}
+\begin{thmframe}{Completeness of LK}{}
 If $\Gamma \models \Delta$, then $\Gamma \vdash \Delta$ is derivable.
 \end{thmframe}
 \begin{proofframe}{}{}
-For each rule, if an interpretation $v$ validates its conclusion, it also validates its premises. This means the logical rules of $LK$ are invertible. Assuming $\Gamma \models \Delta$, applying the rules backwards (bottom-up) will eventually yield valid atomic sequents $\Gamma_i \vdash \Delta_i$, which can be derived using axioms and structural rules.
+For each rule, if an interpretation $v$ validates its conclusion, it also validates its premises. This means the logical rules of LK are invertible. Assuming $\Gamma \models \Delta$, applying the rules backwards (bottom-up) will eventually yield valid atomic sequents $\Gamma_i \vdash \Delta_i$, which can be derived using axioms and structural rules.
 \end{proofframe}
 
 \begin{gframe}{Corollaries of Completeness}
@@ -684,7 +684,7 @@ For each rule, if an interpretation $v$ validates its conclusion, it also valida
 \end{itemize}
 \end{gframe}
 
-\subsection{Application: Using $LK$ to find CNF}
+\subsection{Application: Using LK to find CNF}
 LK can be used to transform a formula $P$ into an equivalent formula $P_{CNF}$ in Conjunctive Normal Form.
 
 If $P$ is not valid, the derivation will yield leaves $A_1, \dots, A_m \vdash B_1, \dots, B_n$ that are not axioms. $P$ is logically equivalent to the conjunction of all such unprovable leaves:
@@ -753,9 +753,9 @@ For any set of formulas $\Gamma$ and formula $P$:
 
 \section{FOL in Sequent Calculus}
 
-To extend the propositional Sequent Calculus $LK$ to First-Order Logic, we add specific rules for the universal ($\forall$) and existential ($\exists$) quantifiers. 
+To extend the propositional Sequent Calculus LK to First-Order Logic, we add specific rules for the universal ($\forall$) and existential ($\exists$) quantifiers. 
 
-\subsection{Quantifier Rules in $LK$}
+\subsection{Quantifier Rules in LK}
 A naive formulation of the quantifier rules can lead to issues with invertibility and infinite proof search branches. To solve this, the rules for introducing quantifiers that instantiate terms ($\forall l$ and $\exists r$) are designed to retain the principal quantified formula in the premises.
 
 \begin{center}
@@ -799,7 +799,7 @@ Given a sequent $\Gamma \vdash \Delta$, the proof search algorithm proceeds as f
 The algorithm stops on a branch if it encounters a \textbf{success} (the sequent is an Axiom) or a \textbf{failure} (the sequent is of the form $\Pi \vdash \Sigma$, where $\Pi$ and $\Sigma$ contain only atomic formulas and $\Pi \cap \Sigma = \emptyset$).
 \end{gframe}
 
-\begin{thmframe}{Completeness of First-Order $LK$}{}
+\begin{thmframe}{Completeness of First-Order LK}{}
     $\Gamma \models \Delta \implies \Gamma \vdash \Delta$
 \end{thmframe}
 \begin{proofframe}{}{}
@@ -814,7 +814,7 @@ Using the concept of witnesses (formulas evaluated to false in the premise that 
 \begin{cframe}{ColorLemma}{Immediate Consequences}
 \begin{itemize}
     \item First-order classical logic is consistent.
-    \item The $LK$ calculus is complete even without the structural rules of contraction and cut
+    \item The LK calculus is complete even without the structural rules of contraction and cut
     \subitem cut and contraction are \textit{admissible rules} (adding them does not change the set of provable sequents)
 \end{itemize}
 \end{cframe}
@@ -849,14 +849,14 @@ Using the concept of witnesses (formulas evaluated to false in the premise that 
 How do you upgrade a constructive/intuitionistic system to a Classical one?
 \begin{itemize}
     \item \textit{natural deduction:} add the RAA rule. (Assuming $\neg A$ yields $\bot \implies$ conclude $A$).
-    \item \textit{sequent calculus:} move from $LJ$ to $LK$; allow multiple formulas on the right of the turnstile. This implicitly encodes the Law of Excluded Middle, as the right side represents a disjunction (OR).
+    \item \textit{sequent calculus:} move from $LJ$ to LK; allow multiple formulas on the right of the turnstile. This implicitly encodes the Law of Excluded Middle, as the right side represents a disjunction (OR).
 \end{itemize}
 
 \subsection*{FOL-specific}
 When dealing with Quantifiers ($\forall, \exists$), be acareful about the \textbf{eigenvariables} !!!
 \begin{itemize}
     \item when generalizing a universal ($\forall i$ in ND, $\forall r$ in SC) or unpacking an existential ($\exists e$ in ND, $\exists l$ in SC), the variable $y$ must be fresh (an eigenvariable). It cannot appear free in your active assumptions/context (\textit{you can't claim something is true for "all $x$" if you rely on a specific $x$ to prove it.})
-    \item in $LK$, the rules $(\forall l)$ and $(\exists r)$ keep the quantified formula in the premise
+    \item in LK, the rules $(\forall l)$ and $(\exists r)$ keep the quantified formula in the premise
     \subitem (to prove something like $\exists x A(x)$, you might need to instantiate $x$ multiple times with different terms)
 \end{itemize}
 
@@ -869,7 +869,7 @@ The freshness constraint on eigenvariables is what prevents proof systems from p
 \textbf{fallacy:} $p(y) \vdash \forall x p(x)$ \quad (\textit{"assuming $y$ is even, every number $x$ is even"})
 
 \begin{itemize}
-    \item \textbf{Natural Deduction (ND):}
+    \item \textbf{ND:}
 \end{itemize}
 \begin{center}
 \AxiomC{$P(y)$}
@@ -882,7 +882,7 @@ The freshness constraint on eigenvariables is what prevents proof systems from p
 \textit{violation:} $y$ is free in the active assumption $P(y)$.
 
 \begin{itemize}
-    \item \textbf{Sequent Calculus ($LK$):}
+    \item \textbf{LK:}
 \end{itemize}
 \begin{center}
 \AxiomC{$P(y) \vdash P(y)$}
@@ -918,7 +918,7 @@ Semantically, if $P(x)$ means "$x$ is even" over $\mathbb{N}$, assuming $P(2)$ i
 \textit{violation:} $y$ appears free in the conclusion $C = P(y)$ of the $(\exists e)$ step
 
 \begin{itemize}
-    \item \textbf{Sequent Calculus ($LK$):}
+    \item \textbf{Sequent Calculus (LK):}
 \end{itemize}
 \begin{center}
 \AxiomC{$P(y) \vdash P(y)$}
@@ -940,7 +940,7 @@ In ND, $(\exists e)$ requires that the conclusion $C$ does not contain $y$ free,
 \begin{center}
 \begin{tabular}{|l|l|l|}
 \hline
-\textbf{Goal} & \textbf{Natural Deduction} & \textbf{Sequent Calculus ($LK$)} \\
+\textbf{Goal} & \textbf{Natural Deduction} & \textbf{Sequent Calculus (LK)} \\
 \hline
 use an "if-then" statement & implication elimination $(\to e)$ & left implication $(\to l)$ \\
 \hline
