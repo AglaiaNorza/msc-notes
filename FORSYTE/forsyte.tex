@@ -13,6 +13,7 @@
 
 \usepackage{listings}
 
+
 \usepackage{csquotes}
 \usepackage{todonotes}
 \MakeOuterQuote{"}
@@ -1033,7 +1034,271 @@ Using the 2-bit counter:
 
 \subsubsection{Handling of assumptions}
 
+\section{TODO: finish}
+
 \chapter{Algebraic Reasoning}
+
+\section{Basic Algebraic Structures}
+
+\begin{defframe}{Ring}{}
+    A \textbf{ring} is a set $R$ with two binary operations $+$ and $\cdot$ such that:
+    \vspace{0.5em}
+    
+    \noindent
+    \begin{minipage}[t]{0.48\textwidth}
+        \begin{itemize}
+            \item $+$ is associative
+            \item $+$ is commutative
+            \item there is a zero element for $+$ (i.e., $x + 0 = x$)
+            \item there is an inverse for $+$ (i.e., $-x$)
+        \end{itemize}
+    \end{minipage}%
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \begin{itemize}
+            \item $\cdot$ is associative
+            \item $\cdot$ is distributive over $+$:
+                \subitem $x(y + z) = xy + xz$
+                \subitem $(x+y)z = xz + yz$
+        \end{itemize}
+    \end{minipage}
+
+    \begin{gframe}{Conventions}
+        \vspace{-0.5em}
+        \begin{itemize}
+            \item $0$ and $-x$ are unique
+            \item the axioms imply other rules such as $x \cdot 0 = 0 = 0 \cdot x$
+        \end{itemize}
+    \end{gframe}
+\end{defframe}
+
+Some examples of rings include $\Z$, $\Q$, $\R$, $\C$ with the usual addition and multiplication, the even integers $\{\dots, -4, -2, 0, 2, 4, \dots\}$, $\Z_{n}$, and square matrices of fixed size with integer entries.
+
+\begin{defframe}{Commutative Ring (with unity)}{}
+    A commutative ring with unity has two more characteristics:
+    \begin{itemize}
+        \item $\cdot $ is commutative (i.e. $x y = y x $)
+        \item there is a unity $1$ for $\cdot $ (i.e., $1x = x$)
+    \end{itemize}
+\end{defframe}
+
+\begin{defframe}{Invertible element}{}
+    (Given that $1 \neq 0$), $u \in R$ is \textbf{invertible} if there is a $v$ such that $uv = vu = 1$.
+
+    We write $v = u^{-1}$.
+\end{defframe}
+
+Some invertible elements are:
+\begin{itemize}
+    \item $\pm 1$ in $\Z$
+    \item all $q \neq 0$ in $\Q$
+    \item ($2\Z$ has no unity !)
+\end{itemize}
+
+\begin{gframe}{Interesting property}
+    We have that $\Z_{n}$ has inverses for all non-zero elements $\iff $ $n$ is prime.
+\end{gframe}
+
+
+\begin{defframe}{Field}{}
+    A \textbf{field} is a commutative ring with unity $1 \neq 0$ in which every non-zero element is invertible.
+
+    We usually denote fields with $\K$.
+\end{defframe}
+
+Some fields include $\Q$, $\R$, $\C$, and (per the property seen above), $\Z_{p}$ with $p$ prime.
+
+\vspace{1em}
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+    box style/.style={
+        draw=#1!70!black,
+        fill=#1!15,
+        very thick,
+        rounded corners=12pt
+    },
+    label text/.style={
+        font=\sffamily\bfseries,
+        anchor=west
+    },
+    math text/.style={
+        font=\small,
+        anchor=west
+    }
+]
+
+    \draw[box style=teal] (0,0) rectangle (11.5,4.2);
+    \node[label text, teal!80!black] at (0.4, 3.7) {Rings};
+    \node[math text] at (2.2, 3.7) {$n \times n \text{ matrices},\; 2\Z$};
+
+    \draw[box style=cyan] (0.3,0.3) rectangle (11.2,3.1);
+    \node[label text, cyan!80!black] at (0.7, 2.6) {Commutative rings with unity};
+    \node[math text] at (6.5, 2.6) {$\Z,\; \Z_6,\; \Z_8,\; \mathcal{P}(S)$};
+
+    \draw[box style=blue] (0.6,0.6) rectangle (6.0,2.0);
+    \node[label text, blue!80!black] at (1.0, 1.3) {Fields};
+    \node[math text] at (2.6, 1.3) {$\mathbb{Q},\; \mathbb{R},\; \C,\; \Z_p$};
+
+\end{tikzpicture}
+\caption{Hierarchy of algebraic structures.}
+\end{figure}
+
+\section{Polynomials}
+We mainly discuss polynomials over fields $\K$.
+
+\begin{defframe}{Monomial}{}
+    A \textbf{monomial} in variables $x = (x_{1}, \dots, x_{n})$ is a product:
+    $$x^{\alpha} = x_{1}^{\alpha_{1}} x_{2}^{\alpha_{2}} \cdots x_{n}^{\alpha_{n}}$$
+    where $\alpha = (\alpha_{1}, \dots, \alpha_{n}) \in \N_{0}^{n}$.
+
+The \textbf{total degree} of a monomial is $|\alpha| = \alpha_{1} + \dots + \alpha_{n}$.
+
+A \textbf{term} is a product $c \ x^{\alpha}$ of a coefficient $c \neq 0 \in \Z$ and a monomial $x^{\alpha}$.
+\end{defframe}
+
+\begin{center}
+{\small
+\begin{tabular}{lcccc}
+\hline
+variables & term & monomial & exponent $\alpha$ & total degree \\
+\hline
+$x, y, z$ & $-5x^2z$ & $x^2z$ & $(2, 0, 1)$ & 3 \\
+$x, y, z$ & $7$ & $1$ & $(0, 0, 0)$ & 0 \\
+$x_1, x_2, x_3, x_4$ & $\frac{1}{2}x_1^3x_3x_4^2$ & $x_1^3x_3x_4^2$ & $(3, 0, 1, 2)$ & 6 \\
+\hline
+\end{tabular}
+}
+\end{center}
+
+\begin{defframe}{Polynomial}{}
+    A \textbf{polynomial} with coefficients in $\K$ is a \textit{finite} sum:
+    $$
+f = \sum_{\alpha} a_{\alpha} x^{\alpha}
+    $$
+    with $a_{\alpha} \in \K$
+
+    \begin{itemize}
+        \item the \textbf{terms} of $f$ are the $a_{\alpha} x^{\alpha}$ with $a_{\alpha} \neq 0$
+        \item the total degree is the degree of the term with maximal degree ($\text{deg}(f) = \text{max}\{|\alpha| : a_{\alpha} \neq 0\}$)
+    \end{itemize}
+
+    We denote the set of all polynomials in variables $x_{1}, \dots, x_{n}$ with coefficient in a structure (e.g. a field $\K$) as $\K[x_{1}, \dots, x_{n}]$.
+\end{defframe}
+
+\[
+f = 2x^3y^2z + \frac{3}{2}y^3z^3 - 3xyz + y^2 \in \mathbb{Q}[x, y, z]
+\]
+
+\begin{center}
+ {\small
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{lcccc}
+\hline
+term & $2x^3y^2z$ & $\frac{3}{2}y^3z^3$ & $-3xyz$ & $y^2$ \\
+\hline
+coefficient & $2$ & $\frac{3}{2}$ & $-3$ & $1$ \\
+exponent $\alpha$ & $(3, 2, 1)$ & $(0, 3, 3)$ & $(1, 1, 1)$ & $(0, 2, 0)$ \\
+total degree & 6 & 6 & 3 & 2 \\
+\hline
+\end{tabular}
+}
+\end{center}
+
+\subsection{The Polynomial Ring}
+Sums and products of polynomials remain polynomials. Thus, $\K[x_{1}, \dots, x_{n}]$ is a \textit{commutative ring with unity} called the \textbf{polynomial ring} (it's not a field because $x$ has no inverse!).
+
+\begin{defframe}{Polynomial division}{}
+    $f$ divides $g$ (written $f\mid g$) if $g = f h$ for some polynomial $h$.
+\end{defframe}
+
+\begin{itemize}
+    \item $(x-y) \mid (x^{2}-y^{2})$ as $x^{2} - y^{2}= (x-y)(x+y)$
+    \item $x \not \mid (x+1)$
+\end{itemize}
+
+
+\begin{defframe}{Affine space}{}
+    An $n$-dimensional \textbf{affine space} over $\K$ is the collection of all possible n $n$-tuples of elements of $\K$:
+    $$\{\K^{n} = \{(a_1, \dots, a_n) : a_i \in \K\}$$
+\end{defframe}
+
+Every polynomial $f \in K[x_{1}, \dots, x_{n}]$ defines a function $f: \K^{n} \to \K$ \textit{by evaluation}. 
+
+That is, you can take a point from $\K^{n}$, plug its coordinates into the variables of the polynomial, and calculate a numerical result.
+
+\textcolor{gray}{For example, if we have $f = x^{2}y - 3y + 1$, we can calculate $f(2, 1) = 4-3+1 = 2$.}
+
+We say that $f$ \textbf{vanishes} at a point $a \in \K^{n}$ if $f(a) = 0$;
+\begin{itemize}
+    \item this can be extended to a \textit{set} of points $T$: $f$ vanishes on $T \subseteq \K^{n}$ if $f(a) = 0$ for all $a \in T$
+\end{itemize}
+
+\textcolor{gray}{For example, $f = xy$ vanishes on both coordinate axes.} 
+
+\begin{cframe}{ColorLemma}{Zero Polynomial vs. Zero Function}{}
+    The statement ``$f = 0$'' can mean two different things:
+    \begin{itemize}
+        \item the \textit{zero polynomial}: all coefficients of $f$ are exactly $0$
+        \item the \textit{zero function}: $f(a) = 0$ for all $a \in \K^{n}$ (i.e., $f$ vanishes on all of $\K^n$)
+    \end{itemize}
+
+These concepts differ depending on the size of the field $\K$:
+
+\begin{itemize}
+    \item \textbf{they differ over finite fields}
+        \subitem a non-zero algebraic expression define the zero function
+    \subitem \textcolor{gray}{for example, over the finite field $\mathbb{F}_2 = \{0, 1\}$, the polynomial $f = x^2 - x$ is not the zero polynomial, but $f(0) = 0$ and $f(1) = 0$.}
+
+    \item \textbf{they are the same over infinite fields} 
+   \subitem if $\K$ is infinite, then $f = 0$ in $\K[x_1, \dots, x_n] \iff f$ is the zero function
+
+   \begin{gframe}{Nota Bene !}
+       as a consequence, $f = g$ algebraically if and only if $f$ and $g$ define the exact same function
+
+       (over infinite variable domains, functions are unique)
+   \end{gframe}
+\end{itemize}
+
+\end{cframe}
+
+\begin{defframe}{Affine variety}{}
+    Let $f_{1}, \dots, f_{s}$ be polynomials in $\K[x_{1}, \dots, x_{n}]$.
+
+    The \textbf{affine variety} defined by $f_{1}, \dots, f_{s}$ is:
+    $$
+V(f_{1, \dots, f_{s}}) = \{ a\in \K^{n} \ : \ f_{i}(a) = 0 \text{ for all } 1 \leq i \leq s\}
+    $$
+    In other words, $V(f_{1}, \dots, f_{s})$ is the solution set of the system $f_{1} = \dots = f_{s} = 0$ (the set of \textit{common roots} of the polynomials).
+\end{defframe}
+
+For example, $V(x^{2} -1) = \{-1, 1\}\subseteq \K$.
+
+\begin{cframe}{ColorThm}{Combining equations}    
+Geometrically, adding more equations forces the solution to satisfy more conditions, resulting in a smaller variety. 
+
+The variety of a system of polynomials is the intersection of their individual varieties:
+$$V(f_{1}, \dots, f_{s}) = V(f_{1}) \cap \dots \cap V(f_{s})$$
+
+\textcolor{gray}{For example, in $\mathbb{R}^{3}$, $V(z - x^{2} - y^{2}, z - 1)$ is the intersection of the paraboloid $V(z - x^{2} - y^{2})$ and the plane $V(z - 1)$, which results in a circle.}
+
+Specifically, we have that:
+    \begin{itemize}
+        \item \textbf{adding multiples} of the equations keeps the same solution set:
+            $$
+            V(xy, y-1) = V(xy + 2(y-1), y-1) = \{0, 1\}
+            $$
+
+        \item \textbf{multiplying} by polynomials can introduce new solutions:
+$$
+\{(0,1)\} = V(xy, y-1) \subset V(xy, x(y-1)) = V(xy, x) = \{x = 0\}
+$$
+
+    \end{itemize}
+\end{cframe}
+
+
+
 \chapter{Program Analysis}
 \chapter{Model Checking Approaches}
 
