@@ -19,6 +19,92 @@
 \algrenewcommand\algorithmicthen{\textcolor{blue}{then}}
 \algrenewcommand\algorithmicfor{\textcolor{blue}{for}}
 
+\usepackage{xargs}
+\usepackage{xstring}
+
+\newcommand{\argemp}[2]{\if&#1&\else#2\fi}
+\newcommand{\argdef}[2]{\if&#1&#2\else#1\fi}
+
+\newcommandx{\mthfnt}[3][1=, 2=0]{{
+	\IfStrEqCase{#1}
+	{%
+		{}%
+		{#3}%
+		{Name}%
+		{%
+			\IfStrEqCase{#2}
+			{%
+				{0}{\mathcal{#3}}%
+				{1}{\mathscr{#3}}%
+				{2}{\mathfrak{#3}}%
+				{3}{\mathbb{#3}}%
+			}
+			[\ensuremath{\clubsuit}]%
+		}%
+		{Set}%
+		{%
+			\IfStrEqCase{#2}
+			{%
+				{0}{\mathrm{#3}}%
+				{1}{\mathsf{#3}}%
+				{2}{\mathbb{#3}}%
+				{3}{\mathbf{#3}}%
+			}
+			[\ensuremath{\clubsuit}]%
+		}%
+		{Fun}%
+		{%
+			\IfStrEqCase{#2}
+			{%
+				{0}{\mathsf{#3}}%
+				{1}{\mathrm{#3}}%
+			}
+			[\ensuremath{\clubsuit}]%
+		}%
+		{Rel}%
+		{%
+			\IfStrEqCase{#2}
+			{%
+				{0}{\mathit{#3}}%
+				{1}{\mathtt{#3}}%
+			}
+			[\ensuremath{\clubsuit}]%
+		}%
+		{Sym}%
+		{%
+			\IfStrEqCase{#2}
+			{%
+				{0}{\mathtt{#3}}%
+				{1}{\mathbf{#3}}%
+			}
+			[\ensuremath{\clubsuit}]%
+		}%
+		{Elm}%
+		{\mathnormal{#3}}
+	}
+[\ensuremath{\clubsuit}]%
+}}
+			
+\newcommand{\mthsub}[1]{\argemp{#1}{\ensuremath{_{\mathnormal{#1}}}}}
+\newcommand{\mthsup}[1]{\argemp{#1}{\ensuremath{^{\mathnormal{#1}}}}}
+
+\newcommandx{\mth}[5][1=, 2=0, 4=, 5=]{{\ensuremath{\mthfnt[#1][#2]{#3}\mthsub{#4}\mthsup{#5}}}}
+
+\newcommand{\mthstyfun}{0}
+\newcommand{\mthfun}[1][]{\mth[Fun][\argdef{#1}{\mthstyfun}]}
+
+\newcommand{\mthstysym}{0}
+\newcommand{\mthsym}[1][]{\mth[Sym][\argdef{#1}{\mthstysym}]}
+
+\newcommand{\X}{\mthsym{X}}
+\newcommand{\F}{\mthsym{F}}
+\newcommand{\G}{\mthsym{G}}
+\newcommand{\U}{\mthsym{U}}
+\newcommand{\E}{\mthsym{E}}
+\newcommand{\A}{\mthsym{A}}
+\newcommand{\true}{\mthfun{true}}
+\newcommand{\false}{\mthfun{false}}
+
 \setuniversity{Technische Universität Wien}
 \setcoursename{Computer-Aided Verification}
 \setcoursebook{slides}
@@ -259,7 +345,31 @@ But assertions only allow us to make sure that nothing bad happens: what if we w
 We need to extend our specification language to consider \textbf{temporal logics}.
 
 \section{Temporal Logics}
+Temporal logics allow us to reason about properties over paths.
+\begin{defframe}{Path formulae}{}
+    An (infinite) \textbf{path} $\pi$ is a sequence of states $s_{0}, s_{1}, \dots$ such that $T(s_{i}, s_{i+1})$ for $i \geq 0$.
 
+    If we fix a Kripke structure $\mathcal{M}$ and a path $\pi$, we can introduce \textit{path formulae} of the form:
+    $$
+\mathcal{M}, \pi \vDash \varphi
+    $$
+    (meaning that $\varphi$ holds on the path $\pi$)
+
+\end{defframe}
+
+The convention is to denote state formulae by $F$, and path formulae by $\varphi$.
+
+We can use the path semantics for state formulae as well, and say that $\mathcal{M}, \pi \vDash F \iff F$ holds in the first state $s_{0}$ of $\pi$.
+
+We now introduce a temporal logic called \textbf{CTL*} (Computation Tree Logic*), which allows us to reason about computation trees and branching time.
+
+
+
+\begin{defframe}{CTL*}{}
+    CTL* formulae are divided into state and path formulae:
+    $$F ::= \true \mid p \mid F_1 \land F_2 \mid \neg F \mid \E \varphi \mid \A \varphi$$ 
+    $$\varphi ::= F \mid \varphi_1 \land \varphi_2 \mid \neg \varphi \mid \X \varphi \mid \varphi_1 \U \varphi_2$$
+\end{defframe}
 
 
 \end{document}
