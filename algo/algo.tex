@@ -23,6 +23,11 @@
 \setbeforespace{2.5em}
 \setafterspace{4em}
 
+\tcbuselibrary{skins, breakable}
+
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
 
 \begin{document}
 
@@ -412,5 +417,402 @@ Through padding, equalities carry upward, but inequalities carry downward via th
     \item $\text{NP} = \text{coNP} \implies \text{NEXP} = \text{coNEXP}$.
     \item $\text{EXP} \neq \text{NEXP} \implies \text{P} \neq \text{NP}$
 \end{itemize}
+
+\chapter{A* Algorithm}
+
+\section{Informed Search}
+When trying to find the quickest or shortest route from a source node $s$ to a target node $t$ on a street network, uninformed search algorithms often aren't as fast as they could be. 
+
+For example, Dijkstra's algorithm is a classic uninformed search algorithm (that supports non-negative weights) that always examines the closest not-yet-examined node. On a simple grid, Dijkstra's expands uniformly in all directions, corresponding essentially to a Breadth-First-Search (BFS). While accurate, its simple implementation yields a time complexity of $O(|V|^2)$, which is typically too slow for large networks.
+
+To speed up the calculation, we can exploit the properties of the graph by applying heuristic information to evaluate each reached node and always expand the most promising one.
+
+\subsection{Greedy Best First Search}
+A purely heuristic approach evaluates nodes based on a function $h(x)$, which represents the ``direct'' (unobstructed) distance to the goal $t$. Common examples include the Euclidean distance $d_2(x,t)$ or the Manhattan distance $d_1(x,t)$. 
+
+Greedy Best First Search always expands the reached node with the minimum distance to the goal. While this minimizes the number of expanded nodes, it \textbf{does not guarantee an optimal solution}, as it can easily get trapped by obstacles or take suboptimal detours.
+
+\section{The A* Algorithm}
+
+To avoid the inefficiencies of Dijkstra's algorithm and the mistakes of Greedy Best First Search, the \textbf{A* Algorithm} (Hart, Nilsson, Raphael, 1968) combines the advantages of both.
+
+It utilizes a priority function $f(x)$ for all $x \in V$, defined as:
+$$f(x) = g(x) + h(x)$$
+
+Where:
+\begin{itemize}
+    \item $g(x)$ is the best known cost so far to reach node $x$ from the start node $s$ (the ``Dijkstra'' part).
+    \item $h(x)$ is the estimated cost from $x$ to the goal $t$, also known as the ``cost-to-go'' (the ``Greedy'' part).
+\end{itemize}
+
+This way, $f(x)$ estimates the \textbf{total cost} of the path from $s$ to $t$ that passes through node $x$.
+
+\begin{gframe}{Implementation and Execution Details}
+During execution, A* maintains a priority queue of nodes to expand, sorted by their $f(x)$ value:
+
+\textbf{A* Algorithm}
+\begin{algorithmic}[1]
+\State Initialize $g(s) = 0$ and $g(x) = \infty$ for all $x \in V \setminus \{s\}$
+\State Insert source $s$ into priority queue $Q$ with priority $f(s) = h(s)$
+\While{$Q \neq \emptyset$}
+    \State extract node $x$ with minimum $f(x)$ from $Q$
+    \If{$x = t$}
+        \State \Return $f(t)$ and the path (using predecessor list)
+    \EndIf
+    \For{all outgoing edges $(x, v) \in A$}
+        \State $g' \gets g(x) + w_{xv}$
+        \If{$g' < g(v)$} \Comment{found a new or better path to $v$}
+            \State $g(v) \gets g'$
+            \State $pred(v) \gets x$
+            \State insert or update node $v$ in $Q$ with priority $f(v) = g' + h(v)$
+        \EndIf
+    \EndFor
+\EndWhile
+\State \Return no path to target $t$
+\end{algorithmic}
+
+\textbf{NB:} 
+\begin{itemize}
+    \item the algorithm continues until the target node $t$ is \textit{selected for expansion} (extracted from the queue), not until it is seen
+    \item A* may find a shorter path to a node that has already been expanded; in this case, the node gets its $g(x)$ updated and is re-inserted into the priority queue
+\end{itemize}
+\end{gframe}
+
+\section{Properties of A*}
+
+\begin{thmframe}{Termination}{}
+    A* will always terminate in a limited time.
+\end{thmframe}
+\begin{proofframe}
+    The inner loop performs a number of iterations proportional to the out-degree of the node ($O(|V|)$), which terminates. There are finitely many acyclic paths from $s$ to other nodes in the graph, and A* only ever considers acyclic paths. On each major iteration, a new acyclic path is considered because a node is either expanded for the first time, or it is re-expanded via a shorter path. Thus, at worst, A* explores every acyclic path.
+\end{proofframe}
+
+\begin{thmframe}{Completeness}{}
+    If a path from $s$ to $t$ exists, A* will always find one.
+\end{thmframe}
+\begin{proofframe}
+    Similarly to DFS and BFS, after expanding a node $x$, A* has found paths from $s$ to all nodes directly reachable via $x$. The only case where A* stops without finding a path to $t$ is when no further reachable unexpanded nodes exist. This implies no path to $t$ exists in the graph.
+\end{proofframe}
+
+\subsection{Heuristics and Optimality}
+A* is not unconditionally guaranteed to find an optimal path. Its optimality depends entirely on the properties of the chosen heuristic $h(x)$.
+
+\begin{defframe}{Admissible Heuristic}{}
+    Let $h^*(x)$ be the true minimal cost from $x$ to $t$. A heuristic $h(x)$ is \textbf{admissible} if it represents a lower bound. Formally:
+    $$h(x) \le h^*(x) \quad \forall x \in V$$
+    An admissible heuristic is always ``optimistic'' (it never overestimates the cost). $d_1(x,t)$, $d_2(x,t)$, and even $h(x)=0$ are all admissible heuristics.
+
+    \textcolor{gray}{(it can be optimistic but not pessimistic because if it is optimistic you might just end up taking more time, but if it is pessimistic you might miss the shortest path (a pessimistic heuristic overestimates the cost, which can cause the algorithm to falsely assume the optimal path is too expensive and settle for a suboptimal route))}
+\end{defframe}
+
+\begin{thmframe}{Optimality}{}
+    If $h(x)$ is admissible, A* is guaranteed to find a least-cost path.
+\end{thmframe}
+\begin{proofframe}
+    Suppose A* finds a suboptimal path with cost $f' > f^* = h^*(s)$. 
+    There must exist a node $x$ which is unexpanded and whose path from $s$ is the beginning of a true shortest path to $t$.
+    Since A* terminated, it must be that $f(x) \ge f'$.
+    However, we know:
+    $f(x) = g(x) + h(x) = g^*(x) + h(x) \le g^*(x) + h^*(x) = f^*$
+    So, $f^* \ge f(x) \ge f'$, which contradicts the assumption that $f' > f^*$.
+\end{proofframe}
+
+\begin{defframe}{Monotonic (Consistent) Heuristic}{}
+    A heuristic $h(x)$ is \textbf{monotonic} if it satisfies the triangle inequality for all edges $(x,y) \in A$, and the goal heuristic is zero:
+    $$h(x) \le w_{xy} + h(y) \quad \text{and} \quad h(t) = 0$$
+    
+    \begin{itemize}
+        \item monotonic heuristics ensure that the $f$-values along any path are non-decreasing ($f(x) \le f(y)$)
+        \item it is impossible to decrease $f(x)$ by extending a path
+        \item this guarantees no re-expansions of nodes are ever necessary, making it comparable to Dijkstra (on non-negative weights)
+
+\begin{gframe}{\textbf{N.B.}: monotonicity implies admissibility!}
+\end{gframe}
+
+    \end{itemize}
+\end{defframe}
+
+\section{Complexity and Variants}
+
+A* is optimally efficient with respect to the used heuristic $h(x)$, meaning no other complete algorithm using the exact same heuristic will expand fewer nodes. 
+\begin{itemize}
+    \item note that Dijkstra's algorithm is the special case of A* where $h(x) = 0$ !
+\end{itemize}
+
+The runtime is generally $O(d^l)$ (where $l$ is the number of nodes on the shortest path and $d$ is a constant), but the actual performance relies heavily on the quality of $h(x)$.
+
+\begin{gframe}{Heuristic Dominance and the 8-Puzzle}
+    A better heuristic leads to better A* performance. If $h_1(x) \le h_2(x)$ for all $x \in V$, we say that $h_2$ \textbf{dominates} $h_1$. A* is guaranteed to expand no more nodes using $h_2$ than it would with $h_1$.
+
+    With a nearly perfect heuristic $h(x) \approx h^*(x)$, runtime drops to $\Theta(l)$.
+    
+    For example, for the 8-Puzzle problem:
+    \begin{itemize}
+        \item $h_1(x)$: number of tiles in wrong positions.
+        \item $h_2(x)$: sum of Manhattan distances of each tile to its target location.
+    \end{itemize}
+    Because $h_2$ dominates $h_1$, running A* with $h_2$ reduces the number of expanded nodes compared to $h_1$ (e.g., 1,641 nodes vs 39,135 nodes for a 24-move solution).
+\end{gframe}
+
+\subsection{Improvements and Variants}
+For very complex problems, A* might still consume too much memory or time. Common improvements include:
+
+\begin{itemize}
+    \item \textbf{Bidirectional search}: running search from $s$ to $t$ and from $t$ to $s$ simultaneously until they meet.
+    \item \textbf{Weighted A*}: ``inflating'' the heuristic (e.g., $f(x) = g(x) + W \cdot h(x)$) to place more emphasis on reaching the goal quickly.
+        \subitem this sacrifices admissibility (optimality is no longer guaranteed), but it provides a bounded sub-optimality in exchange for big speedups
+    \item \textbf{Preprocessing}: pre-calculating all-pairs shortest paths or storing pairwise minimum distances to create near-perfect heuristics
+    \item \textbf{Hierarchical approach}: searching on abstraction levels (e.g., plan a route on major highways first, then refine to local main roads, and finally down to street level)
+    \item \textbf{Iterated Deepening A* (IDA*)}: designed primarily to limit memory usage; it mimics Iterative Deepening DFS, performing a depth-first search while pruning any node where $f(x)$ exceeds a progressively increasing threshold $c$. 
+        \subitem while it guarantees finding the optimal solution with lower memory bounds, it is generally much slower than standard A* due to repeated work
+\end{itemize}
+
+\chapter{Planar Graphs}
+
+\section{Basic Concept}
+A graph $G=(V,E)$ is called planar if it can be drawn in the plane in a way such that no two edges intersect geometrically except at a vertex to which both are incident. Such a drawing is called a \textbf{planar embedding} of $G$, or a plane graph. A plane graph $G$ divides the plane into connected regions called \textbf{faces}. The unbounded region is called the outer or external face of $G$.
+
+\section{Euler's Formula}
+\begin{thmframe}{Euler's formula}{}
+Let $G=(V,E)$ be a connected, planar graph, and let $f$ denote the number of faces. Then 
+$$|V|-|E|+f=2$$
+holds for any planar embedding of $G$.
+\end{thmframe}
+
+From Euler's formula, we can derive several important corollaries:
+\begin{itemize}
+    \item if $G$ is a simple, planar graph with $|V| \ge 3$, then the number of edges is bounded by $|E| \le 3|V| - 6$
+    \item for any simple, planar, bipartite graph with $|V| \ge 3$ vertices and $|E|$ edges, the bound is tighter: $|E| \le 2|V| - 4$
+    \item each simple, planar graph contains a vertex $v$ of degree $d(v) \le 5$
+\end{itemize}
+
+\section{Characterizations of Planar Graphs}
+Certain graphs cannot be drawn in the plane without crossing edges. The two fundamental examples are known as the Kuratowski graphs:
+
+\begin{center}
+\begin{tikzpicture}[
+    scale=0.8,
+    vertex/.style={circle, draw, fill=gray!15, inner sep=0pt, minimum size=3.5mm}
+]
+    \begin{scope}
+        \node[draw=none, fill=none] at (0, 2.5) {\textbf{$K_5$}};
+        \foreach \i in {1,...,5} {
+            \node[vertex] (v\i) at ({90 - (\i-1)*72}:1.5) {};
+        }
+        \foreach \i in {1,...,4} {
+            \pgfmathtruncatemacro{\next}{\i+1}
+            \foreach \j in {\next,...,5} {
+                \draw (v\i) -- (v\j);
+            }
+        }
+    \end{scope}
+
+    % K3,3
+    \begin{scope}[xshift=5cm]
+        \node[draw=none, fill=none] at (1, 2.5) {\textbf{$K_{3,3}$}};
+        \foreach \i/\y in {1/1.5, 2/0, 3/-1.5} {
+            \node[vertex] (l\i) at (0, \y) {};
+            \node[vertex] (r\i) at (2, \y) {};
+        }
+        \foreach \i in {1,2,3} {
+            \foreach \j in {1,2,3} {
+                \draw (l\i) -- (r\j);
+            }
+        }
+    \end{scope}
+\end{tikzpicture}
+\end{center}
+
+\begin{itemize}
+    \item $K_5$: the complete graph on 5 vertices
+    \item $K_{3,3}$: the complete bipartite graph with two partitions of 3 vertices each
+\end{itemize}
+
+
+
+To establish whether a graph is planar, we define relationships to these Kuratowski graphs using subdivisions and minors.
+
+\begin{defframe}{Subdivision}{}
+Subdividing an edge $(u,v) \in E$ of a graph $G=(V,E)$ is the operation of deleting $(u, v)$ and adding a path $P=(u,w_1,...,w_k,v)$, $w_i \notin V$, $1 \le i \le k$ to $G$. 
+
+A graph $G$ is called a subdivision of a graph $G'$ if it is obtained by subdividing some of the edges of $G'$.
+\begin{center}
+\begin{tikzpicture}[
+    scale=1,
+    vertex/.style={circle, draw, fill=gray!15, inner sep=1pt, minimum size=7mm},
+    >=stealth
+]
+    \begin{scope}
+        \node[vertex] (u) at (0, 0) {$u$};
+        \node[vertex] (v) at (3, 0) {$v$};
+        
+        \draw[thick] (u) -- node[above] {delete $(u,v)$} (v);
+        \node[draw=none] at (1.5, -0.8) {original edge};
+    \end{scope}
+
+    \draw[->, thick, shorten >= 2pt, shorten <= 2pt] (3.8, 0) -- (4.8, 0);
+
+    \begin{scope}[xshift=5.5cm]
+        \node[vertex] (u2) at (0, 0) {$u$};
+        \node[vertex] (w1) at (1.5, 0) {$w_1$};
+        \node[vertex] (w2) at (3, 0) {$w_2$};
+        \node[vertex] (v2) at (4.5, 0) {$v$};
+        
+        \draw[thick] (u2) -- (w1) -- (w2) -- (v2);
+        
+        \node[draw=none] at (2.25, -0.8) {subdivided with path $P$};
+    \end{scope}
+\end{tikzpicture}
+\end{center}
+
+\end{defframe}
+
+\begin{thmframe}{[Kuratowski, 1930]}{}
+A graph is planar if and only if it does not contain a subdivision of $K_5$ or $K_{3,3}$.
+\end{thmframe}
+
+\begin{defframe}{Graph Minor}{}
+A graph $H$ is a minor of $G$ if $H$ is obtained from $G$ by deleting and contracting edges and/or deleting vertices.
+
+\begin{center}
+\begin{tikzpicture}[
+    scale=1,
+    vertex/.style={circle, draw, fill=gray!15, inner sep=1pt, minimum size=7mm},
+    >=stealth
+]
+    \begin{scope}
+        \node[vertex] (u) at (0, 1.5) {$u$};
+        \node[vertex] (v) at (2, 1.5) {$v$};
+        \node[vertex] (w) at (2, 0) {$w$};
+        \node[vertex] (x) at (0, 0) {$x$};
+        
+        \draw[thick, blue] (u) -- node[above, text=blue] {\small contract} (v);
+        
+        \draw[thick] (v) -- (w);
+        \draw[thick] (w) -- (x);
+        \draw[thick] (x) -- (u);
+        \draw[thick] (u) -- (w);
+        
+        \node[draw=none] at (1, -0.8) {original graph $G$};
+    \end{scope}
+
+    \draw[->, thick, shorten >= 2pt, shorten <= 2pt] (2.7, 0.75) -- (3.7, 0.75);
+
+    \begin{scope}[xshift=4.2cm]
+        \node[vertex] (uv) at (1, 1.5) {$uv$};
+        \node[vertex] (w2) at (2, 0) {$w$};
+        \node[vertex] (x2) at (0, 0) {$x$};
+        
+        \draw[thick] (uv) -- (w2);
+        \draw[thick] (uv) -- (x2);
+        \draw[thick] (w2) -- (x2);
+        
+        \node[draw=none] at (1, -0.8) {minor $H$};
+    \end{scope}
+\end{tikzpicture}
+\end{center}
+\end{defframe}
+
+\begin{thmframe}{[Wagner]}{}
+A graph is planar if and only if it has no minor isomorphic to $K_5$ or $K_{3,3}$.
+\end{thmframe}
+
+\begin{gframe}{Example: Peterson graph}
+The Peterson graph is a classic example of a non-planar graph.
+
+\begin{center}
+\begin{tikzpicture}[
+    scale=0.8,
+    vertex/.style={circle, draw, fill=gray!15, inner sep=1pt, minimum size=2mm},
+    >=stealth
+]
+    \begin{scope}
+        \node[draw=none, fill=none] at (0, 2.3) {\textbf{Original}};
+        \foreach \i in {1,...,5} {
+            \node[vertex] (v\i) at ({90 - (\i-1)*72}:1.5) {};
+            \node[vertex] (u\i) at ({90 - (\i-1)*72}:0.6) {};
+        }
+        \foreach \i in {1,...,5} {
+            \pgfmathtruncatemacro{\next}{mod(\i,5)+1}
+            \pgfmathtruncatemacro{\star}{mod(\i+1,5)+1}
+            \draw[thick] (v\i) -- (v\next);
+            \draw[thick] (u\i) -- (u\star);
+            \draw[thick] (v\i) -- (u\i);
+        }
+    \end{scope}
+
+    \begin{scope}[xshift=4.2cm]
+        \node[draw=none, fill=none] at (0, 2.3) {\textbf{$K_5$ minor}};
+        \foreach \i in {1,...,5} {
+            \node[vertex] (v\i) at ({90 - (\i-1)*72}:1.5) {};
+            \node[vertex] (u\i) at ({90 - (\i-1)*72}:0.6) {};
+        }
+        \foreach \i in {1,...,5} {
+            \pgfmathtruncatemacro{\next}{mod(\i,5)+1}
+            \pgfmathtruncatemacro{\star}{mod(\i+1,5)+1}
+            \draw[thick] (v\i) -- (v\next);
+            \draw[thick] (u\i) -- (u\star);
+            \draw[ultra thick, BrickRed] (v\i) -- (u\i);
+        }
+        \node[draw=none, fill=none, text=BrickRed] at (0, -2.1) {\small contract};
+    \end{scope}
+
+    \begin{scope}[xshift=8.4cm]
+        \node[draw=none, fill=none] at (0, 2.3) {\textbf{$K_{3,3}$ subdivision}};
+        
+        \foreach \i in {2,...,5} {
+            \node[vertex] (v\i) at ({90 - (\i-1)*72}:1.5) {};
+        }
+        \node[vertex, draw=gray, fill=gray!50] (v1) at (90:1.5) {};
+        
+        \foreach \i in {1,...,5} {
+            \node[vertex] (u\i) at ({90 - (\i-1)*72}:0.6) {};
+        }
+        
+        \foreach \i in {1,...,5} {
+            \pgfmathtruncatemacro{\star}{mod(\i+1,5)+1}
+            \draw[thick] (u\i) -- (u\star);
+        }
+        
+        \draw[dashed, gray] (v1) -- (v2);
+        \draw[thick] (v2) -- (v3);
+        \draw[thick] (v3) -- (v4);
+        \draw[thick] (v4) -- (v5);
+        \draw[dashed, gray] (v5) -- (v1);
+        
+        \draw[dashed, gray] (v1) -- (u1);
+        \draw[thick] (v2) -- (u2);
+        \draw[thick] (v3) -- (u3);
+        \draw[thick] (v4) -- (u4);
+        \draw[thick] (v5) -- (u5);
+        
+        \node[draw=none, fill=none, text=darkgray] at (0, -2.1) {\small delete};
+    \end{scope}
+\end{tikzpicture}
+\end{center}
+
+\begin{itemize}
+    \item by contracting specific edges, we obtain the $K_5$ minor
+    \item by deleting specific edges, we obtain a subdivision of $K_{3,3}$
+\end{itemize}
+Thus, we can prove its non-planarity with both Wagner's and Kuratowski's theorems.
+
+\end{gframe}
+
+\section{Linear Planarity Testing Algorithms}
+Several algorithmic approaches have been developed to test planarity and construct planar embeddings in linear time:
+
+\begin{itemize}
+    \item \textbf{Path-Addition Approach}: the first linear-time planarity testing algorithm, introduced by Hopcroft and Tarjan (1974). 
+        \subitem starts from a cycle and adds one path at a time to the structure
+        \subitem \textcolor{gray}{(Mehlhorn and Mutzel (1996) later clarified how to use this to construct the actual planar embedding)}
+    \item \textbf{Vertex-Addition Approach}: first considered by Lempel, Even, and Cederbaum (1967)
+        \subitem  adds vertices one-by-one following an $st$-numbering
+        \subitem \textcolor{gray}{(Booth and Lueker (1976) proved it can be implemented in linear time using PQ-trees, and Chiba et al. (1985) showed how to construct the embedding)}
+    \item \textbf{Block Embedding Approach}: proposed by Shih and Hsu (1999) and Boyer and Myrvold (1999)
+        \subitem first constructs a DFS-tree and then adds back edges to iteratively construct a planar embedding if one exists
+        \subitem \textcolor{gray}{Boyer and Myrvold (2004) later introduced a new variant with a simpler implementation based on edge addition}
+\end{itemize}
+
 
 \end{document}
