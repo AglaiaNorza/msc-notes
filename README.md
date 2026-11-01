@@ -11,4 +11,4 @@ the collection of my notes for the MSc Logic and AI at TU Wien !
 
 > they're here mainly here because i strongly believe in open knowledge
  
-> (there might be some mistakes !) (feel free to contact me and i'll absolutely fix them ! (or you can fix them yourself if you want))
+> (there might be some mistakes !) (feel free to contact me and i'll absolutely fix them ! (or you can fix them yourself if you want)) (+ the style packages are all in my [latex setup](https://github.com/AglaiaNorza/latex-setup) if needed !)
