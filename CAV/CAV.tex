@@ -12,6 +12,8 @@
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 
+\usetikzlibrary{automata, positioning}
+
 \algrenewcommand\algorithmicwhile{\textcolor{blue}{while}}
 \algrenewcommand\algorithmicdo{\textcolor{blue}{do}}
 \algrenewcommand\algorithmicend{\textcolor{blue}{end}}
@@ -365,11 +367,148 @@ We now introduce a temporal logic called \textbf{CTL*} (Computation Tree Logic*)
 
 
 
-\begin{defframe}{CTL*}{}
+\begin{cframe}{ColorLemma}{\textbf{Def}: CTL*}{}
     CTL* formulae are divided into state and path formulae:
     $$F ::= \true \mid p \mid F_1 \land F_2 \mid \neg F \mid \E \varphi \mid \A \varphi$$ 
     $$\varphi ::= F \mid \varphi_1 \land \varphi_2 \mid \neg \varphi \mid \X \varphi \mid \varphi_1 \U \varphi_2$$
+\end{cframe}
+
+\begin{defframe}{Temporal Operator: Next (X)}{}
+    \textbf{Syntax:} unary path formula $X \varphi$.
+    
+    \textbf{Semantics:} $\mathcal{M},\pi \vDash X\varphi$ if and only if $\mathcal{M},\pi^{1} \vDash \varphi$.
+    
+    \begin{cframe}{ColorThm}{Example}
+        $\mathcal{M},\pi \vDash Xp$; it does not matter whether or not $p$ holds in $s_{0}$ or $s_{2}, s_{3}, \dots$.
+        
+        \vspace{-0.5em}
+        \begin{center}
+        \begin{tikzpicture}[shorten >=1pt,node distance=2cm,on grid,auto, thick]
+            \node[state] (s0) {$s_0$};
+            \node[state, label={above:$p$}] (s1) [right=of s0] {$s_1$};
+            \node[state] (s2) [right=of s1] {$s_2$};
+            \node[state] (s3) [right=of s2] {$s_3$};
+            \node[state] (s4) [right=of s3] {$s_4$};
+            \node (s5) [right=of s4] {$\dots$};
+            
+            \path[->] (s0) edge node {T} (s1)
+                      (s1) edge node {T} (s2)
+                      (s2) edge node {T} (s3)
+                      (s3) edge node {T} (s4)
+                      (s4) edge [dashed] (s5);
+        \end{tikzpicture}
+        \end{center}
+    \end{cframe}
 \end{defframe}
 
+\begin{defframe}{Temporal Operator: Eventually (F)}{}
+    \textbf{Syntax:} unary path formula $F \varphi$.
+    
+    \textbf{Semantics:} $\mathcal{M},\pi \vDash F\varphi$ if and only if $\mathcal{M},\pi^{k} \vDash \varphi$ for some $k \ge 0$. Intuitively, $p$ holds after a finite number of steps. $F$ allows us to express basic liveness properties.
+    
+    \begin{cframe}{ColorThm}{Example}
+        $\mathcal{M},\pi \vDash Fp$.
+        \vspace{-0.5em}
+        \begin{center}
+        \begin{tikzpicture}[shorten >=1pt,node distance=2cm,on grid,auto, thick]
+            \node[state] (s0) {$s_0$};
+            \node[state] (s1) [right=of s0] {$s_1$};
+            \node[state, label={above:$p$}] (s2) [right=of s1] {$s_2$};
+            \node[state] (s3) [right=of s2] {$s_3$};
+            \node[state] (s4) [right=of s3] {$s_4$};
+            \node (s5) [right=of s4] {$\dots$};
+            
+            \path[->] (s0) edge node {T} (s1)
+                      (s1) edge node {T} (s2)
+                      (s2) edge node {T} (s3)
+                      (s3) edge node {T} (s4)
+                      (s4) edge [dashed] (s5);
+        \end{tikzpicture}
+        \end{center}
+    \end{cframe}
+\end{defframe}
 
-\end{document}
+\begin{defframe}{Temporal Operator: Globally (G)}{}
+    \textbf{Syntax:} unary path formula $G \varphi$.
+    
+    \textbf{Semantics:} $\mathcal{M},\pi \vDash G\varphi$ if and only if $\mathcal{M},\pi^{i} \vDash \varphi$ for $i \ge 0$. Intuitively, $p$ holds in every path state. $G$ allows us to express basic safety properties.
+    
+    \begin{cframe}{ColorThm}{Example}
+        $\mathcal{M},\pi \vDash Gp$.
+        \vspace{-0.5em}
+        \begin{center}
+        \begin{tikzpicture}[shorten >=1pt,node distance=2cm,on grid,auto, thick]
+            \node[state, label={above:$p$}] (s0) {$s_0$};
+            \node[state, label={above:$p$}] (s1) [right=of s0] {$s_1$};
+            \node[state, label={above:$p$}] (s2) [right=of s1] {$s_2$};
+            \node[state, label={above:$p$}] (s3) [right=of s2] {$s_3$};
+            \node[state, label={above:$p$}] (s4) [right=of s3] {$s_4$};
+            \node (s5) [right=of s4] {$\dots$};
+            
+            \path[->] (s0) edge node {T} (s1)
+                      (s1) edge node {T} (s2)
+                      (s2) edge node {T} (s3)
+                      (s3) edge node {T} (s4)
+                      (s4) edge [dashed] (s5);
+        \end{tikzpicture}
+        \end{center}
+    \end{cframe}
+\end{defframe}
+
+\begin{defframe}{Temporal Operator: Until (U)}{}
+    \textbf{Syntax:} binary path formula $\varphi_{1} U \varphi_{2}$.
+    
+    \textbf{Semantics:} $\mathcal{M},\pi \vDash \varphi_{1} U \varphi_{2}$ if and only if there is $k \ge 0$ such that $\mathcal{M},\pi^{k} \vDash \varphi_{2}$ and $\mathcal{M},\pi^{j} \vDash \varphi_{1}$ for $0 \le j < k$. Intuitively, $\varphi_{1}$ holds until $\varphi_{2}$ holds, and importantly, $\varphi_{2}$ must happen eventually.
+    
+    \begin{cframe}{ColorThm}{Example}
+        $\mathcal{M},\pi \vDash q U p$. ($q$ doesn't have to hold anymore once discharged by $p$).
+        \vspace{0.5em}
+        \begin{center}
+        \begin{tikzpicture}[shorten >=1pt,node distance=2cm,on grid,auto, thick]
+            \node[state, label={above:$q$}] (s0) {$s_0$};
+            \node[state, label={above:$q$}] (s1) [right=of s0] {$s_1$};
+            \node[state, label={above:$q$}] (s2) [right=of s1] {$s_2$};
+            \node[state, label={above:$p$}] (s3) [right=of s2] {$s_3$};
+            \node[state] (s4) [right=of s3] {$s_4$};
+            \node (s5) [right=of s4] {$\dots$};
+            
+            \path[->] (s0) edge node {T} (s1)
+                      (s1) edge node {T} (s2)
+                      (s2) edge node {T} (s3)
+                      (s3) edge node {T} (s4)
+                      (s4) edge [dashed] (s5);
+        \end{tikzpicture}
+        \end{center}
+    \end{cframe}
+\end{defframe}
+
+\begin{defframe}{Temporal Operator: Release (R)}{}
+    \textbf{Syntax:} binary path formula $\varphi_{1} R \varphi_{2}$.
+    
+    \textbf{Semantics:} $\mathcal{M},\pi \vDash \varphi_{1} R \varphi_{2}$ if and only if one of the two conditions holds:
+    \begin{enumerate}
+        \item $\exists k \ge 0$ such that $\mathcal{M},\pi^{k} \vDash \varphi_{1}$ and $\mathcal{M},\pi^{j} \vDash \varphi_{2}$ for $0 \le j \le k$. ($\varphi_1$ releases $\varphi_2$, if $\varphi_1$ ever holds).
+        \item $\mathcal{M},\pi^{j} \vDash \varphi_{2}$ for $j \ge 0$.
+    \end{enumerate}
+    
+    \begin{cframe}{ColorThm}{Example}
+        $\mathcal{M},\pi \vDash p R q$.
+        \vspace{0.5em}
+        \begin{center}
+        \begin{tikzpicture}[shorten >=1pt,node distance=2cm,on grid,auto, thick]
+            \node[state, label={above:$q$}] (s0) {$s_0$};
+            \node[state, label={above:$q$}] (s1) [right=of s0] {$s_1$};
+            \node[state, label={above:{$q, p$}}] (s2) [right=of s1] {$s_2$};
+            \node[state] (s3) [right=of s2] {$s_3$};
+            \node[state] (s4) [right=of s3] {$s_4$};
+            \node (s5) [right=of s4] {$\dots$};
+            
+            \path[->] (s0) edge node {T} (s1)
+                      (s1) edge node {T} (s2)
+                      (s2) edge node {T} (s3)
+                      (s3) edge node {T} (s4)
+                      (s4) edge [dashed] (s5);
+        \end{tikzpicture}
+        \end{center}
+    \end{cframe}
+\end{defframe}\end{document}

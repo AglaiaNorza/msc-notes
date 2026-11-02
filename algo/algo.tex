@@ -24,9 +24,54 @@
 \setafterspace{4em}
 
 \tcbuselibrary{skins, breakable}
+\tcbuselibrary{most}
 
-\usepackage{algorithm}
-\usepackage{algpseudocode}
+\usepackage{xcolor}
+\usepackage{listings}
+
+\definecolor{codebg}{HTML}{F8FAFC}
+\definecolor{codeframe}{HTML}{E2E8F0} 
+\definecolor{keywordcol}{HTML}{0F766E}
+\definecolor{boolcol}{HTML}{86198F}
+\definecolor{commentcol}{HTML}{64748B}
+\definecolor{linenumbercol}{HTML}{94A3B8}
+
+\lstdefinelanguage{sleekpseudocode}{
+  keywords={procedure, end, for, down, to, do, while, if, then, else, return, initialize, insert, extract, update},
+  keywordstyle=\color{keywordcol}\bfseries,
+  ndkeywords={true, false},
+  ndkeywordstyle=\color{boolcol}\bfseries,
+  sensitive=false,
+  comment=[l]{//},
+  commentstyle=\color{commentcol}\itshape,
+  morecomment=[s]{/*}{*/}
+}
+
+\newtcblisting{pseudocode}[1][]{
+  enhanced,
+  arc=5pt,
+  boxrule=1pt,
+  colback=codebg,
+  colframe=codeframe,
+  top=6pt,
+  bottom=6pt,
+  left=8pt,
+  right=8pt,
+  listing only,
+  listing options={
+    language=sleekpseudocode,
+    basicstyle=\ttfamily\small,
+    numbers=left,
+    numberstyle=\tiny\color{linenumbercol},
+    numbersep=10pt,
+    stepnumber=1,
+    showstringspaces=false,
+    breaklines=true,
+    mathescape=true
+  },
+  #1
+}
+
 
 
 \begin{document}
@@ -451,25 +496,26 @@ This way, $f(x)$ estimates the \textbf{total cost} of the path from $s$ to $t$ t
 During execution, A* maintains a priority queue of nodes to expand, sorted by their $f(x)$ value:
 
 \textbf{A* Algorithm}
-\begin{algorithmic}[1]
-\State Initialize $g(s) = 0$ and $g(x) = \infty$ for all $x \in V \setminus \{s\}$
-\State Insert source $s$ into priority queue $Q$ with priority $f(s) = h(s)$
-\While{$Q \neq \emptyset$}
-    \State extract node $x$ with minimum $f(x)$ from $Q$
-    \If{$x = t$}
-        \State \Return $f(t)$ and the path (using predecessor list)
-    \EndIf
-    \For{all outgoing edges $(x, v) \in A$}
-        \State $g' \gets g(x) + w_{xv}$
-        \If{$g' < g(v)$} \Comment{found a new or better path to $v$}
-            \State $g(v) \gets g'$
-            \State $pred(v) \gets x$
-            \State insert or update node $v$ in $Q$ with priority $f(v) = g' + h(v)$
-        \EndIf
-    \EndFor
-\EndWhile
-\State \Return no path to target $t$
-\end{algorithmic}
+
+\begin{pseudocode}
+initialize $g(s) = 0$ and $g(x) = \infty$ for all $x \in V \setminus \{s\}$
+insert source $s$ into priority queue $Q$ with priority $f(s) = h(s)$
+while $Q \neq \emptyset$ do
+    extract node $x$ with minimum $f(x)$ from $Q$
+    if $x = t$ then
+        return $f(t)$ and the path (using predecessor list)
+    end if
+    for all outgoing edges $(x, v) \in A$ do
+        $g' \gets g(x) + w_{xv}$
+        if $g' < g(v)$ then // found a new or better path to $v$
+            $g(v) \gets g'$
+            $pred(v) \gets x$
+            insert or update node $v$ in $Q$ with priority $f(v) = g' + h(v)$
+        end if
+    end for
+end while
+return no path to target $t$
+\end{pseudocode}
 
 \textbf{NB:} 
 \begin{itemize}
@@ -607,7 +653,6 @@ Certain graphs cannot be drawn in the plane without crossing edges. The two fund
         }
     \end{scope}
 
-    % K3,3
     \begin{scope}[xshift=5cm]
         \node[draw=none, fill=none] at (1, 2.5) {\textbf{$K_{3,3}$}};
         \foreach \i/\y in {1/1.5, 2/0, 3/-1.5} {
@@ -814,5 +859,426 @@ Several algorithmic approaches have been developed to test planarity and constru
         \subitem \textcolor{gray}{Boyer and Myrvold (2004) later introduced a new variant with a simpler implementation based on edge addition}
 \end{itemize}
 
+\chapter{Randomized Algorithms}
+
+\section{Some Probability Theory}
+\subsection{The Basics}
+\begin{defframe}{Finite Probability Space}{}
+    \begin{itemize}
+        \item \textbf{sample space $\Omega$}: set of all possible outcomes (e.g., all possible outcomes of rolling a dice)
+            \subitem every point $i \in \Omega$ has a nonnegative probability $p(i)$, such that $\sum_{i \in \Omega} p(i) = 1$
+        \item event $\mathcal{E}$: subset of the sample space ($\mathcal{E} \subseteq \Omega$).
+        \item \textbf{probability of $\mathcal{E}$}: 
+            $$Pr[\mathcal{E}] = \sum_{i \in \mathcal{E}} p(i)$$
+        \item complement: 
+            $$Not(\mathcal{E}) = \Omega - \mathcal{E}$$
+    \end{itemize}
+\end{defframe}
+
+\begin{defframe}{Conditional probability \& independence}{}
+    \begin{itemize}
+        \item \textbf{conditional probability} of event $\mathcal{E}$ given event $\mathcal{F}$:
+        $$Pr[\mathcal{E} | \mathcal{F}] = \frac{Pr[\mathcal{E} \cap \mathcal{F}]}{Pr[\mathcal{F}]}$$
+        \item \textbf{independence}: 
+
+            events $\mathcal{E}_1, \dots, \mathcal{E}_n$ are independent if and only if for all subsets $I \subseteq \{1, \dots, n\}$:
+        $$Pr\left[\bigcap_{i \in I} \mathcal{E}_i\right] = \prod_{i \in I} Pr[\mathcal{E}_i]$$
+    \end{itemize}
+\end{defframe}
+
+\begin{cframe}{ColorThm}{Union bound}{}
+    For any events $\mathcal{E}_1, \dots, \mathcal{E}_n$, the probability of their union is bounded by the sum of their individual probabilities:
+    $$Pr\left[\bigcup_{i=1}^n \mathcal{E}_i\right] \le \sum_{i=1}^n Pr[\mathcal{E}_i]$$
+\end{cframe}
+
+\subsection{Random Variables and Expected Values}
+
+A \textbf{random variable} $X: \Omega \rightarrow \mathbb{N}$ is a function from the sample space to the natural numbers. 
+
+The \textbf{expected value} (or expectation) of $X$ is defined as:
+$$E[X] = \sum_{j=0}^\infty j \cdot Pr[X = j]$$
+
+\textbf{example: waiting for a first success} \\
+Suppose a trial is successful with probability $0 < p < 1$ and fails with probability $1 - p$. If $X$ is the number of independent trials until the first success, the expectation is:
+$$E[X] = \sum_{j=0}^\infty j \cdot (1-p)^{j-1}p = \frac{p}{1-p} \sum_{j=0}^\infty j \cdot (1-p)^j = \frac{p}{1-p} \cdot \frac{1-p}{p^2} = \frac{1}{p}$$
+
+\begin{cframe}{ColorThm}{Linearity of expectation}{}
+    Let $X$ and $Y$ be random variables over the same probability space. Then:
+    $$E[X + Y] = E[X] + E[Y]$$
+\end{cframe}
+
+\begin{gframe}{Example: guessing cards}
+Given a deck of $n$ cards, repeatedly guess the top card before turning it over. Let $X$ be the number of correctly guessed cards, and $X_i = 1$ if the $i$-th card is guessed correctly (0 otherwise).
+\begin{itemize}
+    \item \textit{memoryless}: 
+        $$E[X_i] = \frac{1}{n} \ \ \ \text{ so } \ \ \ E[X] = \sum_{i=1}^n \frac{1}{n} = 1$$
+    \item \textit{with memory}: 
+        $$E[X_i] = \frac{1}{n-i+1} \  \ \ \text{ so } \  \ \ E[X] = \sum_{i=1}^n \frac{1}{n-i+1} = \sum_{i=1}^n \frac{1}{i} = \mathcal{H}_n \approx \ln n$$ 
+    (where $\mathcal{H}_n$ is the $n$-th Harmonic number, satisfying $\ln(n+1) < \mathcal{H}_n \le 1 + \ln n$).
+\end{itemize}
+\end{gframe}
+
+\begin{gframe}{Example: coupon collector's problem}
+Assume there are $n$ types of coupons, and in each round, you get one at random (equally likely). 
+
+Let $X$ be the number of rounds to collect all types. 
+
+We define \textit{phase $j$} as the period where you have $j$ types and are waiting for the $(j+1)$-th type. Let $X_j$ be the number of rounds in phase $j$.
+\begin{itemize}
+    \item the success probability in phase $j$ is $p(j) = \frac{n-j}{n}$.
+    \item the expected rounds for phase $j$ is $E[X_j] = \frac{1}{p(j)} = \frac{n}{n-j}$.
+    \item by linearity of expectation: $E[X] = \sum_{j=0}^{n-1} E[X_j] = n \sum_{j=0}^{n-1} \frac{1}{n-j} = n \, \mathcal{H}_n \approx n \ln n$.
+\end{itemize}
+\end{gframe}
+
+\section{Randomized Algorithms}
+Randomized algorithms depend on \textbf{uniformly random numbers} as an \textbf{auxiliary input} to guide behaviour (these numbers are usually implemented by a pseudo-random number generator).
+
+\begin{gframe}{Example: quicksort}
+Deterministic quicksort has a worst-case runtime of $\Theta(n^2)$, when it gets handed specific input permutations (e.g., an already sorted array). 
+
+We can randomise quicksort by selecting the pivot element uniformly at random instead of using a deterministic position(standard quicksort has a ``fixed'' pivot).
+
+This way, the worst case is still $\Theta(n^2)$, but it happens only if the internal random number generator repeatedly picks extreme values (very unlikely) (so, since choices are random, there are no bad input permutations that will always run in $\Theta(n^{2})$).
+
+The expected runtime is $\Theta(n \log n)$ for all possible input permutations. The expectation is taken over all possible random decisions made by the algorithm, avoiding dependency on the input data distribution.
+\end{gframe}
+
+
+Randomized algorithms reduce runtime and/or memory usage for worst case input, and they avoid dependency on input data.
+
+\begin{defframe}{Monte Carlo vs Las Vegas}{}
+    There are two types of randomized algorithms:
+    \begin{itemize}
+        \item \textbf{Monte Carlo} algorithms: always \textbf{time-efficient}, but not always correct (correct with high probability)
+        \item \textbf{Las Vegas} algorithms: always \textbf{correct}, but not always time-efficient
+    \end{itemize}
+\end{defframe}
+
+\subsection{Randomized Primality Test}
+We are given a positive integer $n$, and we want to determine whether it is prime.
+
+The first issue we run into is "bit complexity". Standard algorithm analysis often assumes arithmetic operations (like addition) take constant time ($O(1)$). However, this is only true for numbers small enough to fit in standard CPU registers (e.g., 64-bit integers). 
+
+    For arbitrarily large numbers, addition takes time proportional to the length of the number. Therefore, we use \textbf{bit complexity}:
+    \begin{itemize}
+        \item represent $n$ as a binary number with $k = \lceil \log_2 n \rceil + 1$ bits
+        \item the number of fundamental bit operations (rather than high-level arithmetic operations) becomes the criterion for time complexity
+    \end{itemize}
+
+    \textcolor{gray}{For example, if we wanted to check primality via the "division method" - checking if $n$ is divisible by $2$ or by some odd number in $\{3, \dots, \lfloor\sqrt{n}\rfloor \}$ -, we would need to do $O(\sqrt{n})$ divisions, with a bit complexity of $\frac{O(2^{k}{2}})$ with $k = \Theta(\log n)$}.
+
+We need to use another method. We can make use of \textbf{Fermat's Little Theorem}, which states:
+$$\text{if } n \text{ is prime, } a^{n-1}\equiv 1 \text{ mod } n \ \text{for all } a \in \{1, \dots, n-1\}$$
+
+This allows us to say that, if for some $a$
+\begin{itemize}
+    \item $a^{n-1} \not \equiv 1 \text{ mod } n$, then $n$ is definitely not prime (and $a$ is a witness for $n$'s compositeness)
+    \item $a^{n-1} \equiv 1 \text{ mod } n$ then $n$ is prime with some probability
+\end{itemize}
+
+\vspace{1em}
+This gives us the following algorithm:
+\vspace{0.5em}
+
+\begin{pseudocode}
+procedure FermatPrimalityTest($n, s$)
+    for $i \gets 1$ to $s$ do
+        $a \gets \text{random}(2, n - 1)$
+        if Witness($a, n$) then
+            return COMPOSITE
+        end if
+    end for
+    return PRIME
+end procedure
+\end{pseudocode}
+
+Which essentially says that, if no witness for the number has been found after $s$ iterations, then $n$ is likely prime.
+\begin{itemize}
+    \item this is a \textbf{Monte Carlo} algorithm (as it could return a false positive)
+\end{itemize}
+
+To implement this efficiently, we need a way to compute $a^{n-1} \bmod n$ in a cheap way.
+
+\begin{gframe}{Efficient Modular Exponentiation}
+We can break down the exponentiation using the binary representation of $n-1$: $(b_k, b_{k-1}, \dots, b_1)$. 
+
+We then have that:
+\begin{itemize}
+    \item $a^{2c} \bmod n = (a^c \bmod n)^2 \bmod n$
+    \item $a^{c+1} \bmod n = (a^c \bmod n) \cdot a \bmod n$
+\end{itemize}
+\end{gframe}
+
+This yields the following algorithm for the witness check:
+
+\vspace{0.5em}
+\begin{pseudocode}
+procedure Witness($a, n$)
+    Let $(b_k, \dots, b_1)$ be the binary representation of $n-1$
+    $result \gets 1$
+    for $i \gets k$ down to $1$ do
+        $result \gets (result \cdot result) \bmod n$
+        if $b_i = 1$ then
+            $result \gets (result \cdot a) \bmod n$
+        end if
+    end for
+    if $result \neq 1$ then
+        return true // a is a witness for n not being prime
+    else
+        return false // a is not a witness
+    end if
+end procedure
+\end{pseudocode}
+
+
+\begin{itemize}
+    \item multiplication and modulo of two $k$-bit numbers takes $O(k^2)$ time
+    \item the "witness" function runs in $O(k^3)$
+    \item the total running time of the Fermat algorithm is $O(s \cdot k^3)$
+\end{itemize}
+
+The test fails for \textit{Carmichael numbers}, which are composite but incorrectly satisfy $a^{n-1} \equiv 1 \bmod n$ for all $a \in \{1, \dots, n-1\}$. Fortunately, these are extremely rare (e.g., there are only 246,683 below $10^{16}$).
+
+For all other odd, non-prime numbers $n > 2$:
+\begin{itemize}
+    \item there are at least $\frac{n-1}{2}$ witnesses
+    \item in each iteration, a randomly chosen $a$ is a witness with probability $\ge \frac{1}{2}$
+    \item after $s$ iterations, the probability of not finding a witness is $\le \frac{1}{2^s}$
+\end{itemize}
+
+\section{Analysis of (Randomized) Quicksort}
+The dominant cost of the algorithm is the comparison of elements to the pivot.
+
+To analyse this, we conceptually sort the elements of the array as $x_{1} < x_{2} < \dots < x_{n}$, and we define a variable $X_{i,j}$ s.t. 
+ 
+    $$X_{i,j} = \begin{cases} 1 & \text{if } x_i \text{ is compared to } x_j \\ 0 & \text{otherwise} \end{cases}$$
+    
+Because the pivot is selected uniformly at random from the current subarray $A[l \dots r]$, we have:
+    $$Pr[\text{random}(l,r) = i] = \frac{1}{r-l+1}$$
+
+We can visualise the recursive pivot choices as a \textbf{binary search tree} (where the nodes are the randomly chosen pivot elements), in which every element is only compared with its direct ancestors or descendants.
+
+Very importantly, if we consider two elements $x_{i}$ and $x_{j}$, we know that they will only ever be compared if and only if \textit{one of them is chosen as a pivot} before any element in between them is chosen: if any intermediate element $x_k$ (where $i < k < j$) is selected as a pivot first, it would split them: $x_i$ goes to the left subarray, $x_j$ goes to the right subarray, and they would never be compared.
+
+\begin{cframe}{ColorLemma}{Probability of a single comparison}
+    Consider the subset of elements $\{x_i, x_{i+1}, \dots, x_j\}$. This subset contains $j - i + 1$ elements. 
+    
+    Since pivots are chosen uniformly at random, every element in this subset is equally likely to be the first one chosen as a pivot. The only choices that result in a comparison between $x_i$ and $x_j$ are picking $x_i$ or picking $x_j$. 
+    
+    Therefore, the probability that $x_i$ and $x_j$ are compared is exactly:
+    $$Pr[X_{i,j}] = \frac{2}{j - i + 1}$$
+\end{cframe}
+
+\begin{cframe}{ColorThm}{Expected total comparisons}
+    We want to find the expected total number of comparisons, $E[C]$. 
+
+    Using the Linearity of Expectation, we sum the expectations (which equal the probabilities) of all indicator variables:
+    
+    $$E[C] = E\left[\sum_{i=1}^{n-1} \sum_{j=i+1}^n X_{i,j}\right] = \sum_{i=1}^{n-1} \sum_{j=i+1}^n Pr[X_{i,j}] = \sum_{i=1}^{n-1} \sum_{j=i+1}^n \frac{2}{j - i + 1}$$
+    
+    We simplify this using a change of variables, letting $k = j - i + 1$:
+    $$E[C] = \sum_{i=1}^{n-1} \sum_{k=2}^{n-i+1} \frac{2}{k} \le 2 \sum_{i=1}^n \sum_{k=1}^n \frac{1}{k} = 2n\mathcal{H}_n$$
+    
+    Where $\mathcal{H}_n = \sum_{k=1}^n \frac{1}{k}$ is the $n$-th Harmonic number. Since $\ln(n+1) < \mathcal{H}_n \le 1 + \ln n$, we know $\mathcal{H}_n \approx \ln n$.
+    
+    \textbf{Therefore:} 
+    $$E[C] = E[T] = \Theta(n \log n)$$
+\end{cframe}
+
+
+\section{MAX 3-SAT}
+
+\begin{defframe}{MAX-3SAT Problem}{}
+    \textbf{input:} a set of clauses $C_1, \dots, C_k$, each of length 3, over a set of binary variables $X = \{x_1, \dots, x_n\}$.
+    
+    \textbf{goal:} find a variable assignment satisfying as many clauses as possible. 
+    
+    \begin{gframe}{MAX-3SAT is NP-hard!}
+    \end{gframe}
+\end{defframe}
+
+\textbf{Randomized idea:} set each variable independently to \text{true} with probability $\frac{1}{2}$ and to \text{false} otherwise.
+
+\begin{cframe}{ColorThm}{Expected satisfied clauses}
+    Given a MAX-3SAT instance with $k$ clauses, the expected number of clauses satisfied by a random assignment is $\frac{7}{8}k$.
+\end{cframe}
+    
+\begin{proofframe}{}{}
+    Define an indicator variable $Z_j$ which equals 1 if clause $C_j$ is satisfied, and 0 otherwise. 
+    Let $Z = \sum_{j=1}^k Z_j$ be the total number of satisfied clauses.
+    
+    A clause of length 3 fails only if all 3 literals are false. Since each variable is chosen independently with probability $\frac{1}{2}$, the probability a clause fails is $\left(\frac{1}{2}\right)^3 = \frac{1}{8}$. 
+
+    Thus, $Pr[C_j \text{ is satisfied}] = 1 - \frac{1}{8} = \frac{7}{8}$.
+    
+    By linearity of expectation:
+    $$E[Z] = \sum_{j=1}^k E[Z_j] = \sum_{j=1}^k Pr[C_j \text{ is satisfied}] = \frac{7}{8}k$$
+\end{proofframe}
+\begin{cframe}{ColorLemma}{Lower Bound on Satisfiable Clauses}
+    For \textit{every} instance of MAX-3SAT there is an assignment that satisfies $\ge \frac{7}{8}$ of all clauses.
+    
+\end{cframe}
+
+\begin{proofframe}{}{}
+As $E[Z] = \frac{7}{8}k$, the probability $Pr[Z \ge \frac{7}{8}k]$ of constructing such an assignment must be greater than 0. Consequently, such an assignment must exist. 
+\begin{gframe}{}
+     We can show the existence of a structure by providing a random construction process that succeeds with positive probability.
+\end{gframe}
+
+\end{proofframe}
+
+\subsection{Johnson's Algorithm}
+
+While the expectation is $\frac{7}{8}k$, a random variable might almost always be below its mean. 
+
+To have a reliable algorithm, we must determine the actual probability $p$ of generating a good assignment.
+
+\begin{cframe}{ColorLemma}{Probability of Success}
+    The probability $p$ that a random assignment satisfies $\ge \frac{7}{8}k$ clauses is $\ge \frac{1}{8k}$.
+\end{cframe}
+    
+\begin{proofframe}{}{}
+Let $p_j$ be the probability that exactly $j$ clauses are satisfied. 
+
+Then $p = \sum_{j \ge 7k/8} p_j$.
+    $$\frac{7}{8}k = E[Z] = \sum_{j < 7k/8} j \cdot p_j + \sum_{j \ge 7k/8} j \cdot p_j$$
+    $$\le \frac{7k-1}{8} \sum_{j < 7k/8} p_j + k \sum_{j \ge 7k/8} p_j = \frac{7k-1}{8}(1-p) + kp \le \frac{7k-1}{8} + kp$$
+    $$kp \ge \frac{7}{8}k - \frac{7k-1}{8} = \frac{1}{8} \implies p \ge \frac{1}{8k}$$
+\end{proofframe}
+
+The algorithm used to solve MAX-3SAT with this probability is called \textbf{Johnson's algorithm}.
+
+    \textbf{the algorithm:} repeatedly generate random assignments until one satisfies $\ge \frac{7}{8}k$ clauses.
+    \begin{itemize}
+        \item it's a $7/8$-approximation algorithm for MAX-3SAT. \textcolor{gray}{(N.B.: Håstad proved that no $\alpha$-approximation exists for $\alpha > 7/8$ unless P=NP).}
+        \item as seen above, each iteration succeeds with probability $\ge \frac{1}{8k}$; using the waiting-time bound for a first success, the expected number of trials is $\le 8k$.
+        \item the total expected runtime is $E[T] = O(8k) \cdot O(n+k) = O(k^2 + kn)$
+    \end{itemize}
+    
+\begin{gframe}{}
+    This process turns a Monte Carlo algorithm into a Las Vegas algorithm (it always produces a correct $7/8$ approximation, but runtime is an expectation).
+\end{gframe}
+
+\section{Tail Inequalities}
+
+Expected runtimes describe average behavior, but tail inequalities provide bounds on the probability that an algorithm's performance strays far from its expectation.
+
+\begin{cframe}{ColorThm}{Markov's Inequality}{}
+    Let $X$ be a non-negative random variable ($X \ge 0$) with expectation $E[X]$.
+
+    For any $t > 0$:
+    $$Pr[X \ge t] \le \frac{E[X]}{t} \quad \text{or with } t = k \cdot E[X]: \quad Pr[X \ge k \cdot E[X]] \le \frac{1}{k}$$
+   
+\begin{itemize}
+    \item requires the least information (only $E[X]$ and non-negativity), making it universally applicable but providing the weakest (slowest decay) bound
+\end{itemize}
+\end{cframe}
+
+\begin{cframe}{ColorThm}{Chebyshev's Inequality}{}
+    Let $X$ be a random variable with expectation $E[X]$ and standard deviation $\sigma[X] = \sqrt{E[(X - E[X])^2]}$. For any $t > 0$:
+    $$Pr[|X - E[X]| \ge t \cdot \sigma[X]] \le \frac{1}{t^2}$$
+    
+    \begin{itemize}
+        \item incorporates variance to measure spread around the mean; the deviation probability drops quadratically ($1/t^2$)
+    \end{itemize}
+\end{cframe}
+
+\begin{cframe}{ColorThm}{Chernoff Bounds}{}
+    Let $X = \sum_{i=1}^n X_i$ be the sum of \textit{independent 0--1 random variables}. 
+
+    For any $\mu \ge E[X]$:
+    
+    \textbf{above the mean (for any $\delta > 0$):}
+    $$Pr[X > (1+\delta)\mu] < \left(\frac{e^\delta}{(1+\delta)^{1+\delta}}\right)^\mu$$
+    
+    \textbf{below the mean (for $0 < \delta < 1$):}
+    $$Pr[X < (1-\delta)\mu] < e^{-\delta^2 \mu / 2}$$
+    
+    \begin{itemize}
+        \item the sum of independent 0-1 random variables is exponentially tightly concentrated around its mean
+    \end{itemize}
+\end{cframe}
+\newpage
+\textbf{Example: Chernoff bounds on coin flips}\\
+Consider $n$ flips of a fair coin, where $X$ is the total number of heads. 
+
+Here, $\mu = E[X] = \frac{n}{2}$. 
+
+We want the probability of getting more than $\frac{3}{4}n$ heads (i.e., more than $75\%$ heads).
+
+We set the Chernoff threshold $(1 + \delta)\mu$ equal to $\frac{3}{4}n$:
+$$(1 + \delta) \cdot E[X] = \frac{3}{4}n \iff (1 + \delta)\left(\frac{n}{2}\right) = \frac{3}{4}n$$
+$$1 + \delta = \frac{3}{2} = 1.5 \implies \delta = 0.5$$
+
+So, we have that
+$$Pr\left[X > (1 + 0.5)E[X]\right] = Pr\left[X > \frac{3}{4}n\right] < \left( \frac{\sqrt{e}}{1.5^{1.5}} \right)^{n/2} \approx 0.9^{n/2}$$
+
+If we compare the results with the actual probabilities:
+\begin{itemize}
+    \item $n = 2$: exact $Pr\left[X > \frac{3}{4}n\right] = 0.25 < 0.9$
+    \item $n = 3$: exact $Pr\left[X > \frac{3}{4}n\right] = 0.125 < 0.86$
+    \item $n = 4$: exact $Pr\left[X > \frac{3}{4}n\right] = 0.0625 < 0.81$
+    \item $n = 10$: exact $Pr\left[X > \frac{3}{4}n\right] = 0.0546875 < 0.59$
+    \item $n = 100$: exact $Pr\left[X > \frac{3}{4}n\right] \approx 2.82 \cdot 10^{-7} < 0.0052$
+\end{itemize}
+
+Chernoff bounds overestimate the true error probability significantly, but they are widely used because they are simple to compute and guarantee exponential decay wrt $n$.
+\section{Key Takeaways}
+
+\begin{cframe}{ColorThm}{The Probabilistic Method}
+Non-constructive proof technique used to prove the \textbf{existence of a specific solution or structure}. It can be done:
+\begin{itemize}
+    \item \textbf{via expectation:} if you can show that the expected value of a random variable is $E[X] = \mu$, then there mathematically must exist at least one specific outcome in the sample space that achieves $\ge \mu$ (and analogously, one that achieves $\le \mu$)
+    \item \textbf{via probability:} if you can prove that the probability of randomly generating a valid configuration is greater than zero ($Pr[\mathcal{E}] > 0$), then that configuration definitively exists
+\end{itemize}
+\end{cframe}
+
+\begin{cframe}{ColorLemma}{Converting Monte Carlo to Las Vegas}
+A Monte Carlo algorithm (fast, but potentially returns an incorrect output) can be upgraded into a Las Vegas algorithm (always correct, but with an expected, non-guaranteed runtime) if and only if you can efficiently verify the correctness of the output:
+\begin{itemize}
+    \item wrap the Monte Carlo algorithm in a loop that repeats until the verification step succeeds
+\end{itemize}
+\end{cframe}
+
+\begin{cframe}{ColorDef}{Analyzing Algorithm Probability}{}
+To analyze the expected runtime or an expected score of a randomized algorithm:
+\begin{enumerate}
+    \item \textbf{define indicator variables:} break the total cost down into binary events. 
+       \subitem define an indicator variable $X_i \in \{0, 1\}$ \textcolor{gray}{(e.g., $X_{i,j} = 1$ if a comparison happens between $i$ and $j$, or $Z_j = 1$ if clause $j$ is satisfied).}
+    \item \textbf{calculate individual probability:} compute the probability that a single indicator evaluates to 1 ($Pr[X_i = 1]$)
+        \subitem because it is a binary 0-1 variable, its expected value is exactly its probability: $E[X_i] = Pr[X_i = 1]$
+    \item \textbf{apply linearity of expectation:} use $E[\sum X_i] = \sum E[X_i]$ to add up all the individual probabilities, getting the overall expected total cost
+    \end{enumerate}
+    \end{cframe}
+
+\begin{cframe}{ColorThm}{Choosing a Tail Inequality}
+Tail inequalities quantify concentration by bounding the probability that a random variable deviates far from its mean. We can choose the bound based on what information is available:
+\begin{itemize}
+    \item \textbf{markov's inequality:} use when $X \ge 0$ and you \textit{only} know $E[X]$.
+        \subitem weakest bound; probability drops off polynomially ($O(1/k)$).
+    \item \textbf{chebyshev's inequality:} use when you know both $E[X]$ and the variance $\sigma^2[X]$ (or standard deviation $\sigma$).
+        \subitem wtronger bound; probability drops off quadratically ($O(1/t^2)$).
+    \item \textbf{chernoff bounds:} use when $X = \sum X_i$ is a sum of \textit{independent 0--1} (Bernoulli) random variables.
+        \subitem wtrongest bound; probability drops off exponentially.
+\end{itemize}
+\end{cframe}
+
+\begin{cframe}{ColorDef}{Summary of Tail Inequalities}{}
+    \vspace{-1em}
+\begin{enumerate}
+    \item \textbf{Markov:} $Pr[X \ge k \cdot E[X]] \le \frac{1}{k}$
+        \subitem \textit{assumptions:} $X \ge 0$, $k > 0$.
+    \item \textbf{Chebyshev:} $Pr[|X - E[X]| \ge t \cdot \sigma[X]] \le \frac{1}{t^2}$
+        \subitem \textit{assumptions:} Known variance $\sigma^2[X]$.
+    \item \textbf{Chernoff (Above Mean):} $Pr[X > (1+\delta)\mu] < \left( \frac{e^\delta}{(1+\delta)^{1+\delta}} \right)^\mu$
+        \subitem \textit{assumptions:} $X = \sum_{i=1}^n X_i$ with independent $X_i \in \{0, 1\}$ and $\mu \ge E[X]$.
+    \item \textbf{Chernoff (Below Mean):} $Pr[X < (1-\delta)\mu] < e^{-\delta^2 \mu / 2}$
+        \subitem \textit{Assumptions:} Same as above, with $0 < \delta < 1$.
+\end{enumerate}
+\end{cframe}
+
 
 \end{document}
+
+
