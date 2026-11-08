@@ -28,6 +28,9 @@
 
 \usepackage{xcolor}
 \usepackage{listings}
+\usetikzlibrary{calc}
+
+\newcommand{\Rn}{\R^{n}}
 
 \definecolor{codebg}{HTML}{F8FAFC}
 \definecolor{codeframe}{HTML}{E2E8F0} 
@@ -1277,6 +1280,468 @@ Tail inequalities quantify concentration by bounding the probability that a rand
         \subitem \textit{Assumptions:} Same as above, with $0 < \delta < 1$.
 \end{enumerate}
 \end{cframe}
+
+\chapter{MILP}
+
+\section{Linear Programming}
+The objective of linear programming is to maximise (/minimise) a linear function in presence of linear (in)equality constraints.
+
+\begin{gframe}{Example}
+We could, for example, want to maximise a function like
+$$3x_{1} - x_{2} -2x_{3}$$
+
+subjects to constraints like:
+\begin{itemize}
+    \item $4x_{2} - 0.5x_{3} \leq 10$
+    \item $x_{1} \geq 1$
+    \item $x_{2} + 2x_{3} \leq -2$
+    \item $x_{1} + 2x_{2} +7.7x_{3} = -9$
+\end{itemize}
+
+\end{gframe}
+
+(euclidean norm - modulo di un vettore, square root of the sum of the squared components)
+
+\begin{defframe}{Linear Program}{}
+    A linear program is defined by
+\begin{itemize}
+    \item $A = (a_{ij})_{ij} \in \mathbb{R}^{m \times n}$ (constraint matrix)
+    \item $c \in \mathbb{R}^{n}$ (objective function coefficients)
+    \item $b \in \mathbb{R}^{m}$ (bounding limits)
+    \item $x \in \mathbb{R}^{n}$ (decision variables)
+\end{itemize}
+
+We want to maximize the \textbf{objective function}
+$$c^T x = c_{1} x_{1} + \dots + c_{n}x_{n}$$
+
+subject to
+\begin{align*}
+    a_{i,1}x_{1} + \dots + a_{i,n} x_{n} &\leq b_{i} \quad \text{ for } i \in I_{-} \\
+    a_{i,1}x_{1} + \dots + a_{i,n} x_{n} &\geq b_{i} \quad \text{ for } i \in I_{+}  \\
+    a_{i,1}x_{1} + \dots + a_{i,n} x_{n} &= b_{i} \quad \text{ for } i \in I_{0} \\
+\end{align*}
+
+The system of constraints can be visualized as a matrix-vector multiplication $Ax \le b$:
+
+$$
+\underbrace{
+\begin{pmatrix}
+    a_{1,1} & a_{1,2} & \dots & a_{1,n} \\
+    a_{2,1} & a_{2,2} & \dots & a_{2,n} \\
+    \vdots  & \vdots  & \ddots & \vdots \\
+    a_{m,1} & a_{m,2} & \dots & a_{m,n}
+\end{pmatrix}
+}_{\text{matrix } A \text{ (coefficients)}}
+\underbrace{
+\begin{pmatrix}
+    x_1 \\ 
+    x_2 \\ 
+    \vdots \\ 
+    x_n
+\end{pmatrix}
+}_{\text{vector } x \text{ (variables)}}
+\begin{matrix}
+    \leq \\ 
+    \leq \\ 
+    \vdots \\ 
+    \leq
+\end{matrix}
+\underbrace{
+\begin{pmatrix}
+    b_1 \\ 
+    b_2 \\ 
+    \vdots \\ 
+    b_m
+\end{pmatrix}
+}_{\text{vector } b \text{ (bounds)}}
+$$
+
+The objective function uses a separate vector $c$ (the coefficients/weights) multiplied by our variable vector $x$. We want to find the specific $x$ that maximizes this result:
+
+$$
+\text{Maximize } \quad
+\underbrace{
+\begin{pmatrix}
+    c_1 & c_2 & \dots & c_n
+\end{pmatrix}
+}_{\text{row vector } c^T \text{ (weights)}}
+\underbrace{
+\begin{pmatrix}
+    x_1 \\ 
+    x_2 \\ 
+    \vdots \\ 
+    x_n
+\end{pmatrix}
+}_{\text{column vector } x \text{ (variables)}}
+= \text{ total value}
+$$
+
+\begin{gframe}{}
+(so, the matrix multiplication dictates which values are "legal" for $x$ - the so-called \textbf{feasible region} -, and, for any legal value, the vector operation can assign it its "value")
+
+(therefore, the point is to search through the valid $x$ factors and find which one maximises/minimises the vector product with $c$)
+\end{gframe}
+\end{defframe}
+
+So, we have that:
+\begin{itemize}
+    \item $x \in \Rn$ is a \textit{feasible solution} if the constraints apply
+    \item the \textbf{feasible region} is the set of all feasible solutions
+    \item a maximiser is an (optimal) feasible solution, and its maximum value is called the \textbf{optimum} 
+\end{itemize}
+
+We work, WLOG, under the assumption that all our inequalities are in the $\leq $ form (i.e. $I_{+} = I_{0} = \emptyset$).
+
+Therefore, our problem becomes to maximise $c^{T} x$ subject to $(a_{i,1}, a_{i,2}, \dots, a_{i,n})x \leq b_{i}$, with $x \geq 0$.
+
+(which can also be expressed, in a shorter form, as
+
+$$\text{max}(c^{T} x : x \in \Rn, \ Ax \leq b, \ x>=0)$$
+
+)
+
+\begin{cframe}{ColorLemma}{Standard Form}
+    The standard form (used for simplex algorothms) is:
+
+\begin{itemize}
+    \item maximising $c^{T} x$
+    \item subject to $Ax = b$
+    \item with $x \geq 0$
+\end{itemize}
+\end{cframe}
+
+
+\begin{gframe}
+If we have equations of a different form, we can convert them into standard form as follows:
+
+$$a_{i,1}x_{1} + \dots + a_{i,n}x_{n} \leq b \implies  a_{i,1}x_{1} + \dots + a_{i,n}x_{n} +s_{i} = b$$
+
+where $s_{i} \geq 0$ is called \textit{slack}
+
+$$a_{i,1}x_{1} + \dots + a_{i,n}x_{n} \geq  b \implies  a_{i,1}x_{1} + \dots + a_{i,n}x_{n} -s_{i} = b$$
+
+
+where $s_{i} \geq 0$ is called \textit{surplus}
+\end{gframe}
+
+\begin{cframe}{ColorThm}{Example}
+\begin{minipage}[t]{0.42\textwidth}
+    \vspace{0pt}
+    \textbf{naïve form}
+    \begin{align*}
+        \max \quad & 3x_1 - x_2 - 2x_3 \\
+        \text{subject to} \quad & \\
+        4x_2 - 0.5x_3 &\le 10 \\
+        x_1 &\ge 1 \\
+        x_2 + 2x_3 &\le -2 \\
+        x_1 + 2x_2 + 7.7x_3 &= -9 \\
+        x_1, x_2, x_3 &\in \mathbb{R}
+    \end{align*}
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{0.54\textwidth}
+    \vspace{0pt}
+    \textbf{standard form}
+    \begin{align*}
+        \max \quad  3x_1 - & (\textcolor{purple}{x_2^+ - x_2^-}) - 2(\textcolor{purple}{x_3^+ - x_3^-}) \\
+        \text{subject to} \quad & \\
+        4(\textcolor{purple}{x_2^+ - x_2^-}) - 0.5(\textcolor{purple}{x_3^+ - x_3^-}) + \textcolor{purple}{s_1} &= 10 \\
+        x_1 - \textcolor{purple}{s_2} &= 1 \\
+        (\textcolor{purple}{x_2^+ - x_2^-}) + 2(\textcolor{purple}{x_3^+ - x_3^-}) + \textcolor{purple}{s_3} &= -2 \\
+        x_1 + 2(\textcolor{purple}{x_2^+ - x_2^-}) + 7.7(\textcolor{purple}{x_3^+ - x_3^-}) &= -9 \\
+        x_1, \textcolor{purple}{x_2^+, x_2^-, x_3^+, x_3^-, s_1, s_2, s_3} &\ge 0
+    \end{align*}
+\end{minipage}
+\end{cframe}
+
+
+\begin{cframe}{ColorLemma}{Recalls}
+Let us recall some algebraic concepts.
+
+Firstly, the \textbf{inner product} (or dot product if in Euclidean space) is an operation that combines two vectors to produce a scalar, measuring their similarity.
+
+It can be seen in two different ways:
+\begin{itemize}
+    \item algebraically
+$$ \large \sum_{i=1}^n v_i w_i{}$$
+\subitem where we take the $n$-th coordinate of $v$ and multiply it by the $n$-th coordinate of $w$, and add them all up
+
+\item geometrically
+$$\large \cos \sphericalangle(v,w) |v| |w|$$
+\subitem $||v||$ and $||w||$ are the magnitudes/lengths of the vectors, and $\sphericalangle$ is the angle between $v$ and $w$ (of which we take the cosine)
+
+Furthermore, we have that for a vector $a \in \Rn \setminus \{0\}$ and $b \in \R$:
+\begin{itemize}
+    \item a set $\{x \in \Rn \mid \sum_{i=1}^n a_i x_i = b \}$ is a \textbf{hyperplane} (a single row from a $Ax = b$ matrix)
+        \subitem a hyperplane is meant to represent a flat, uncurved surface; in 2D, a it's a straight line, in 3D it's a flat plane, in 4D and on it's represented by the set above
+
+    \item changing the equal sign into an inequality ( $\{x \in \Rn \mid \sum_{i=1}^n a_i x_i \leq  b \}$ ) yields a \textbf{halfspace}: the hyperplane slices the space in two, and the halfspace is everything on one side of tue cut (keeping the boundary line)
+\end{itemize}
+
+(the $a$ above is a \textbf{normal vector}, which is essentially a vector of coefficients for the $x$s; in general, a normal vector is one that is perpendicular)
+
+We have that a normal vector $a$ points to the "upper half space" $H_{+}$ of a hyperplane $H$ (since it's perpendicularm it acts as an arrow pointing away from the boundary, indicating which half of the space is "positive").
+
+\end{itemize}
+\end{cframe}
+
+This way, the \textbf{feasible region} $P$ of an LP ($\max \{c^{T}x : Ax \leq b, \ x \geq 0 \}$) can be seen as an \textit{intersection of $m+n$ halfspaces}:
+\begin{itemize}
+    \item the matrix has $m$ rows, so $m$ constraint inequalities forming $m$ halfspaces
+    \item the standard form also includes the positive orthant rule $x \geq 0$, which generates $n$ boundary inequalities ($x_{1} \geq 0$, $x_{2} \geq 0$ etc:w
+        )
+\end{itemize}
+
+\begin{defframe}{Polyhedron, Polytope}{}
+    A \textbf{polyhedron} is a set $M \subseteq \Rn$ that is the intersection of finitely many halfspaces of $\Rn$.
+
+    \begin{itemize}
+        \item \color{gray} it is built from straight cuts, so it has flat faces and sharp corners; it also can be completely closed off, or it can be open and stretch out into infinity
+    \end{itemize}
+
+
+    A \textbf{polytope} $M$ is a \textit{bounded polyhedron} (it does not stretch to infinity): it is contained in some fixed-size $n$-dimensional ball centered at $0 \in \Rn$
+
+    I.e., $\sup_{x\in M} |x| < \infty$:
+    \begin{itemize}
+    \item this means that the maximum distance from the origin is a finite number (the length of $x$, $|x|$ (its distance from the origin $0$)
+    \end{itemize}
+\end{defframe}
+
+\vspace{1em}
+We can visualise the example we mentioned before on a 2D plane:
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}
+
+\draw[->] (-0.2,0) -- (7.5,0) node[right] {$x_1$};
+\draw[->] (0,-0.2) -- (0,5.5) node[above] {$x_2$};
+
+\foreach \x in {1,2,3,4,5,6,7}
+    \draw (\x, 0.1) -- (\x, -0.1) node[below] {\x};
+\foreach \y in {1,2,3,4,5}
+    \draw (0.1, \y) -- (-0.1, \y) node[left] {\y};
+
+\fill[blue!15] 
+    (0,0) -- 
+    (0, 3.83) -- 
+    (1.71, 3.39) -- 
+    (4.5, 2) -- 
+    (5.5, 0) -- cycle;
+\node at (2.5, 0.8) {\color{gray}\textsf{feasible region}};
+
+\draw[->, thick, black] (0, 1.2) -- (0.5, 1.2) node[right, scale=0.9] {$x_1 \ge 0$};
+\draw[->, thick, black] (1, 0) -- (1, 0.5) node[right, scale=0.9] {$x_2 \ge 0$};
+
+\draw[orange, thick] (-0.5, 4.16) -- (7.5, 1.5);
+\draw[->, thick, orange] (1, 3.66) -- (0.8, 3.1);
+
+\draw[cyan, thick] (-0.2, 4.35) -- (7.5, 0.5);
+\draw[->, thick, cyan] (3.5, 2.5) -- (3.2, 2.0);
+
+\draw[teal, thick] (2.8, 5.4) -- (5.8, -0.6);
+\draw[->, thick, teal] (4.6, 1.8) -- (4.1, 1.55);
+
+\draw[gray, thick, dashed] (2, 5.5) -- (7.5, 0);
+\draw[->, thick, gray] (6, 1.5) -- (5.5, 1.0);
+
+\begin{scope}[shift={(8, 2.5)}]
+    \draw[teal, thick] (0, 1.5) -- (1, 1.5) node[right, black] {$2x_1 + x_2 \le 11$ };
+    \draw[gray, thick, dashed] (0, 1) -- (1, 1) node[right, black] {$x_1 + x_2 \le 7$ };
+    \draw[cyan, thick] (0, 0.5) -- (1, 0.5) node[right, black] {$2x_1 + 4x_2 \le 17$};
+    \draw[orange, thick] (0, 0) -- (1, 0) node[right, black] {$x_1 + 3x_2 \le 12$};
+\end{scope}
+
+\end{tikzpicture}
+\end{figure}
+
+\begin{itemize}
+    \item note that the constraint $x_{1} + x_{2} \leq 7$ is "redundant" (it is "dominated"(? shaded?) by the other stronger constraints)
+\end{itemize}
+
+If we consider this geometrically:
+
+\begin{center}
+\includegraphics[scale=0.3]{assets/geometric-example-LP}
+\end{center}
+
+We can see that:
+\begin{itemize}
+    \item \textcolor{gray}{note: a \textbf{linear hull} (or span) of a vector $c$, $[c]$, is the infinite line drawn through the origin that follows $c$'s direction forever}
+    \item the vector $c = (1.5, 2)^{T}$ is our objective function, and our goal (in a maximization problem) isto find the point in the feasible (purple) region that extends the furthest in the direction of $c$
+    \item for every feasible point, we can consider how "good" it is, by drawing a $90$-deg line from the dot onto $c$ - the place where it lands is its "score"
+\end{itemize}
+
+So, we want to see how far a feasible point $v$ extends in the direction of our objective vector $c$. 
+
+Algebraically, the point's "score" is the dot product $c^T v$. Geometrically, this score is found by orthogonally projecting $v$ onto the line of $c$. However, the standard vector projection formula (onto the linear hull $[c]$) is a bit complicated:
+$$ \text{proj}_{[c]} v = (c^T v) \cdot \left( \frac{c}{\|c\|^2} \right) $$
+
+But we can introduce a custom vector:
+$$ c_{\text{renorm}} = \frac{c}{\|c\|^2} $$
+
+($c_{\text{renorm}}$ is like a custom "measuring stick" for which one physical step along the line equals exactly one unit of profit in the score). 
+
+Our projection formula is now:
+$$ \text{proj}_{[c]} v = \lambda \cdot c_{\text{renorm}} \quad \text{where } \lambda = c^T v $$
+
+\textcolor{gray}{(if a point $v$ has a profit score of $5.1$, its geometric projection drops onto the objective line exactly $5.1$ "measuring sticks" away from the origin;}
+
+This way, the optimal solution is the point that allows us to maximise the number of $c_{\text{renorm}}$ without slipping outside the feasible region.
+
+\begin{center}
+\includegraphics[scale=0.3]{assets/geometric-example-LP-3D}
+\end{center}
+
+If we move from 2D to 3D, our feasible region is a solid block: to evaluate it, we don't use a line, but rather a 2D sheet (green hyperplane in the figure).
+
+\begin{itemize}
+    \item $\{x : c^T x = \lambda\}$ \ represents the huperplane, and it's a "level set": a sheet where every single point produces the same profit score $\lambda$ (it is perpendicular to $c$)
+    \item to maximise profit, we want $\lambda$ to be as large as possible, which means sliding the hyperplane up along the $c$ arrow: the last point of contact between the green hyperplane and the purple shape is our maximum
+\end{itemize}
+
+\subsection{Convexity}
+\begin{defframe}{Convexity}{}
+A shape $M$ is convex if you can pick any two points $x$ and $y$ inside it and draw a line between them that stays completely inside the shape.
+
+This is expressed by 
+$$(1 - \lambda)x + \lambda y$$
+$\lambda$ ranges from $0$ to $1$, where $\lambda = 0$ gives $x$, $\lambda = 1$ gives $y$, and the other values are the points in-between (e.g. $\lambda = 0.5$ is the midpoint).
+
+\vspace{1em}
+A function $f$ is convex if, when you pick any two points on its curve and draw a straight line between them, the curve will always sag below or equal to that straight line.
+
+The line is expressed by:
+$$f((1-\lambda)x + \lambda y) \leq (1-\lambda)f(x) + \lambda f(y)$$
+where
+\begin{itemize}
+    \item $f((1-\lambda)x + \lambda y)$ is the height of the function curve betweeen $x$ and $z$
+    \item $(1-\lambda)f(x) + \lambda f(y)$ is the height of the straight line connecting the two points
+    \item (so, by $\leq $, the curve needs to sit below the line)
+\end{itemize}
+\end{defframe}
+
+We have that convex sets are stable (/closed) under intersection. This tells us that, since a halfspace is a convex set, a polyhedron, which is built by overlapping halfspaces, will also be convex.
+
+We also have that convex functions don't have \textit{local minima} (any local minimum is a global minimum).
+
+\begin{gframe}{}
+Any affine function (function consisting of a linear transformation followed by a translation/offset (e.g. $y = mx + b$)) is  both convex and concave (because it has no curvature).
+\end{gframe}
+
+\begin{thmframe}{Maximizing Convex Functions}{}
+    A non-constant continuous convex function $f: M \to \R$ defined on a convex closed set $\emptyset \neq M \subseteq \Rn$ is either unbound from above ($\text{sup}_{M}f = + \infty$) or, provided it has a maximum (it is a polytope), \textit{every maximiser} is at the boundary of $M$.
+
+    (this means optimal solutions are always found on the edges/vertices, never inside the feasible region)
+\end{thmframe}
+
+    \textcolor{gray}{Geometrically, a linear objective function behaves like a rigid uniformly tilted plane, while the convex feasible region $M$ acts as a "fenced-in" spatial domain. To maximize the objective function, we need to go up the upward slope of the tilted plane. Because linear and affine functions have no curvature, the ascent is uninterrupted, so we keep going up indefinitely until we are obstructed by the outer "fence" of the feasible domain. Consequently, the point of highest elevation (the optimal solution) cannot exist in the interior; the lack of curvature forces the maximizer to be on the boundary of $M$.}
+
+    Some special cases are:
+    \begin{itemize}
+        \item if $M = \emptyset$ (no valid region), convention dictates $\max f = -\infty$
+        \item if the objective function aligns perfectly parallel to a boundary face, there are infinitely many maximizers
+        \item if the objective function pushes into a single extreme point (vertex), the maximizer is unique
+        \item even if $M$ stretches to infinity in one direction, a finite maximum can still exist if the objective function points away from the infinite direction
+    \end{itemize}
+
+    \textcolor{gray}{N.B.: the \textbf{maximum} is the maximum value, and it is unique, while the \textbf{maximiser} is the optimal solution that generates the maximum (the $x$s), and there can be more than one} 
+
+
+\begin{defframe}{Convex Hull}{}
+    Given $M \subseteq \Rn$ and a set of points  $(v^{i})_{i \leq n}$, the \textbf{convex hull} is the smallest possible convex shape that completely wraps up all of the points.
+
+    (algebraically, it's the set of all points $x$ that can be formed by a \textit{convex combination} of a finite number of points from $M$.)
+
+    Formally, it is the set of all $x$ for which there are 
+    \begin{itemize}
+        \item $N \geq 1$ points $v^{1}, \dots, v^{n}\in M$ 
+        \item scalars $\lambda_{1}, \dots, \lambda_{n} \in [0,1]$ s.t. $\sum_{i=1}^{N} \lambda_{i} = 1$ (called \textbf{weights})
+    \end{itemize}
+    such that
+    $$
+x = \sum_{i=1}^{N} \lambda_{i} v^{i}
+    $$
+    (as mentioned above, this is referred to as the \textbf{convex combination}).
+
+    (the sum is a weighted average, and, since every weight is positive and they all add up to 1, we know that the new point $x$ will land inside the boundary of the $v^{i}$)
+
+\end{defframe}
+
+\begin{thmframe}{Finite basis theorem for polytopes}{}
+    A set of points is a polytope (a bounded polyhedron) if and only if it is the convex hull of a finite number of points (its vertices). 
+
+\begin{gframe}{}
+    (before, we had defined a polytope "from outside in", as a bounded shape generated by intersecting flat halfspace constraints
+
+now, we see that we can also define it "from the inside out": instead of listing the boundary lines, we list its corners and take their convex hull)
+\end{gframe}
+\end{thmframe}
+
+\begin{defframe}{Extreme points}{}
+    For a set $M \subseteq \Rn$, a point $x \in M$ is called an \textbf{extreme point} if it cannot be expressed as a convex combination of $y, z \in M \setminus \{{x\}}$
+
+    \textcolor{gray}{(it forms a convex corner)}
+\end{defframe}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}[>=stealth]
+    \coordinate (d) at (0, 0);
+    \coordinate (a) at (1.4, -1.4);
+    \coordinate (b) at (1.6, 0.6);
+    \coordinate (c) at (0, 2.0); 
+    
+    \coordinate (e1_end) at (1.9, -1.9);
+    \coordinate (e2_end) at (2.2, 0.825);
+    \coordinate (e3_end) at (0, 2.6);
+
+    \coordinate (e) at ($(a)!0.4!(c)$);
+
+    \draw[dashed] (d) -- (b);
+    \draw[dotted] (d) -- (e);
+
+    \fill[blue!15] (a) -- (b) -- (c) -- cycle;
+    \draw[thick] (a) -- (b) -- (c) -- cycle;
+
+    \draw[->] (d) -- (e1_end) node[below left] {$\boldsymbol{e}_1$};
+    \draw[->] (d) -- (e2_end) node[right] {$\boldsymbol{e}_2$};
+    \draw[->] (d) -- (e3_end) node[above] {$\boldsymbol{e}_3$};
+
+    \fill (d) circle (1.5pt) node[left=2pt] {$\boldsymbol{d}$};
+    \fill (a) circle (1.5pt) node[left=2pt] {$\boldsymbol{a}$};
+    \fill (b) circle (1.5pt) node[right=2pt] {$\boldsymbol{b}$};
+    \fill (c) circle (1.5pt) node[left=2pt] {$\boldsymbol{c}$};
+    \fill (e) circle (1.5pt) node[left=2pt] {$\boldsymbol{e}$};
+
+    \node[anchor=west] at (3.2, 0.4) {
+      $\begin{aligned}
+        \boldsymbol{a} = \begin{pmatrix} 1 \\ 0 \\ 0 \end{pmatrix}, \quad 
+        \boldsymbol{b} = \begin{pmatrix} 0 \\ 1 \\ 0 \end{pmatrix}, \quad 
+        \boldsymbol{c} = \begin{pmatrix} 0 \\ 0 \\ 1 \end{pmatrix}, \\[10pt]
+        \boldsymbol{d} = \begin{pmatrix} 0 \\ 0 \\ 0 \end{pmatrix}, \quad 
+        \boldsymbol{e} = \begin{pmatrix} 0.6 \\ 0 \\ 0.4 \end{pmatrix}
+      \end{aligned}$
+    };
+  \end{tikzpicture}
+  \caption{$\boldsymbol{e}$ is not extreme, but $\boldsymbol{a}, \boldsymbol{b}, \boldsymbol{c}$ are; the surface equals $\operatorname{conv}\{\boldsymbol{a}, \boldsymbol{b}, \boldsymbol{c}\}$.}
+  \label{fig:extreme-points}
+\end{figure}
+
+
+\begin{thmframe}{}{}
+    For a polyhedron $\emptyset \neq P = \{x | Ax \leq  b\}$, these assertions are equivalent:
+    \begin{itemize}
+        \item $P$ has at least one extreme point
+        \item $P$ does not contain a line (an infinite line that extends infinitely in both directions)
+            \vspace{-0.5em}
+            $$\text{i.e. } \forall y \in \Rn, v \in \Rn \setminus \{0\}, \ \ \{y +\lambda v | \lambda \in \R\}\not \subseteq P$$
+            \vspace{-1em}
+            \subitem \textcolor{gray}{(you start at a point $y$ inside the shape, pick a direction $v$ and use the multiplier $\lambda$ (any number in $[-\infty, +\infty]$) to extend it forever in both directions; if this can be done without exiting the shape, it "contains" the line)}
+        \item the set of rows $A = \{a_{i, 1} \dots, a_{i,n}\}$ contains $n$ linearly independent $1 \times n $ row vectors
+            \subitem \color{gray} linearly dependent rows are parallel lines (derivable from one another with linear transformations), while linearly independent rows will have different angles and intersect, creating an angle; here, we're in an $n$-dimensional space, so, to obtain a corner, we need $n$ different rows intersecting (and since the rows intersect from every dimension, there is no "free" dimension for an infinite line to run tthrough)
+    \end{itemize}
+\end{thmframe}
 
 
 \end{document}
