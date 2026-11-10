@@ -8,6 +8,8 @@
 \usepackage{/home/aglaia/Documents/latex-setup/packages/frameboxes} 
 \usepackage{/home/aglaia/Documents/latex-setup/packages/title}
 
+\usepackage{csquotes}
+\MakeOuterQuote{"}
 
 \setuniversity{Technische Universität Wien}
 \setcoursename{Algorithmics}
@@ -1455,6 +1457,7 @@ where $s_{i} \geq 0$ is called \textit{surplus}
 \end{cframe}
 
 
+\subsection{Polyhedral geometry}
 \begin{cframe}{ColorLemma}{Recalls}
 Let us recall some algebraic concepts.
 
@@ -1630,6 +1633,7 @@ Any affine function (function consisting of a linear transformation followed by 
 \end{gframe}
 
 \begin{thmframe}{Maximizing Convex Functions}{}
+    \label{thm:solutions-on-edges}
     A non-constant continuous convex function $f: M \to \R$ defined on a convex closed set $\emptyset \neq M \subseteq \Rn$ is either unbound from above ($\text{sup}_{M}f = + \infty$) or, provided it has a maximum (it is a polytope), \textit{every maximiser} is at the boundary of $M$.
 
     (this means optimal solutions are always found on the edges/vertices, never inside the feasible region)
@@ -1729,7 +1733,7 @@ now, we see that we can also define it "from the inside out": instead of listing
 \end{figure}
 
 
-\begin{thmframe}{}{}
+\begin{thmframe}{(Extreme points)}{}
     For a polyhedron $\emptyset \neq P = \{x | Ax \leq  b\}$, these assertions are equivalent:
     \begin{itemize}
         \item $P$ has at least one extreme point
@@ -1742,6 +1746,384 @@ now, we see that we can also define it "from the inside out": instead of listing
             \subitem \color{gray} linearly dependent rows are parallel lines (derivable from one another with linear transformations), while linearly independent rows will have different angles and intersect, creating an angle; here, we're in an $n$-dimensional space, so, to obtain a corner, we need $n$ different rows intersecting (and since the rows intersect from every dimension, there is no "free" dimension for an infinite line to run tthrough)
     \end{itemize}
 \end{thmframe}
+
+We said (in thm \ref{thm:solutions-on-edges}) that the solutions must be on the edges of our feasible region.
+
+We want to be more specific, and to prove that they are on \textit{extreme points}.
+
+\begin{thmframe}{Bauer's Maximum Principle}{}
+    When maximising $c^{T}$ over $P = \{x : Ax \leq b\}$, suppose there exists at least one extreme point. Then, either $x \mapsto c^{T}x$ is unbounded on $P$ ($\max = \infty$), or there exists an optimal solution $x_{*}$ among the extreme points of $P$.
+\end{thmframe}
+
+\begin{itemize}
+    \item since our formulation $\max\{c^{T}x | Ax \leq b, \ x \geq 0\}$ has a feasible region in $x \geq 0$, unless the polyhedron is empty, extreme points exist!
+\end{itemize}
+
+\begin{thmframe}{Finiteness of extreme points}{}
+    In a polyhedron, there can only be finitely many extreme points.
+\end{thmframe}
+\begin{itemize}
+    \item but they can still be a lot!
+\end{itemize}
+
+There are actually three ways to define extreme points!
+
+\noindent
+\begin{minipage}[t]{0.48\textwidth}
+    \textbf{Extreme point} (inner view): $\boldsymbol{x} \in P$ is no convex combination of two points $\boldsymbol{y}, \boldsymbol{z} \in P \setminus \{\boldsymbol{x}\}$. \\[1.5em]
+    \centering
+    \begin{tikzpicture}[scale=1.2]
+        % Axes
+        \draw[->] (-0.1,0) -- (3,0) node[right] {$x_1$};
+        \draw[->] (0,-0.1) -- (0,2.5) node[above] {$x_2$};
+
+        \draw[fill=blue!15, draw=blue] (0,0) -- (2.5,0) -- (2,1) -- (0,1.8) -- cycle;
+        
+        \draw[red, thick] (0,1.8) -- (2,1);
+
+        \fill[red] (1, 1.4) circle (1.5pt);
+        \node[red, above right] at (1, 1.4) {\small not extreme};
+
+        \fill[green!60!black] (2, 1) circle (1.5pt);
+        \node[green!60!black, right] at (2, 1) {\small extreme};
+    \end{tikzpicture}
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+    \textbf{Vertex} (outer view): there is $\boldsymbol{c}$ such that $\boldsymbol{x}$ is the \textit{unique} maximizer of $\boldsymbol{c}^\top \boldsymbol{x}$ over $P$  \\[1.5em]
+    \centering
+    \begin{tikzpicture}[scale=1.2]
+        \draw[->] (-0.1,0) -- (3,0) node[right] {$x_1$};
+        \draw[->] (0,-0.1) -- (0,2.5) node[above] {$x_2$};
+
+        \draw[fill=blue!15, draw=blue] (0,0) -- (2.5,0) -- (2,1) -- (0,1.8) -- cycle;
+
+        \draw[red, dashed, thick] (-0.2, 1.88) -- (2.7, 0.72) node[right, xshift=-4pt, yshift=6pt] {\small touches whole edge};
+        \fill[red] (1, 1.4) circle (1.5pt);
+
+        \draw[green!60!black, thick] (1, 2) -- (2.6, 0.4);
+        
+        \draw[->, green!60!black, thick] (2, 1) -- (2.3, 1.5) node[right] {$\boldsymbol{c}$};
+        
+        \fill[green!60!black] (2, 1) circle (1.5pt) node[below left] {$\boldsymbol{x}^*$};
+    \end{tikzpicture}
+
+    \textcolor{gray}{\small(a point is a vertex if you can tilt a board (the green line) so that it touches that one specific point and nothing else)}
+\end{minipage}
+
+\vspace{1em}
+
+\begin{center}
+    \begin{minipage}{0.9\textwidth}
+        \large\noindent
+        \textcolor{gray}{And! both notions also have an \textit{algebraic} characterization:}
+
+        \begin{defframe}{Basic feasible solution}{}
+        $\boldsymbol{x} \in P$ is a \textbf{basic feasible solution} if, among the constraints $\sum_{j=1}^n a_{i,j} x_j \le b_i$ that are \textit{active} at $\boldsymbol{x}$ (i.e., hold with equality \textcolor{gray}{(so, the points on the boundary)}), there are $n$ with linearly independent rows $(a_{i,1}, \dots, a_{i,n})$ 
+        \end{defframe}
+
+        \small(we need to be touching `walls' for all dimensions) (the only way to stand against n different, non-parallel walls at the same itme is to be on the corner where they intersect)
+    \end{minipage}
+\end{center}
+
+\begin{thmframe}{Bertismas, Tsitsklis, 1997}{}
+    (for a polyhedron $P$) $x$ is an extreme point of $P$ $\iff $ $x$ is a vertex of $P$
+\end{thmframe}
+
+\section{Duality}
+\begin{thmframe}{Farkas' Lemma, 1894}{}
+    These two statements are equivalent:
+    \begin{itemize}
+        \item there exists $x \geq 0 \in \Rn$, with $Ax \le b$
+            \subitem (there is a valid solution)
+        \item if, for each vector $y \in \mathbb{R}^m$, $y \ge 0$, we have  $A^T y \ge 0$, then we must also have $y^T b \ge 0$
+            \begin{itemize}
+                \item we introduce a new vector $y$ in the $m$-dimensional space of the rows (constraints), which acts as a set of \textit{weights} for the constraints
+                \item we check for contradiction: we take all the constraint equations and multiply each one by one by a positive weight and add them up
+                    \begin{itemize}
+                        \item $A^{T} y \geq 0$: the weights are s.t. the left side is positive
+                        \item $y^{T} b \geq 0$: the right side (the bounding) is also positive
+                        \item (if we made the left side positive, but the right side somehow negative, the system would be claiming that a positive value is $\le$ a negative value)
+                            \subitem so this basically says: if the left side is positive, the right side must also be positive (and there are no contradictions)
+                    \end{itemize}
+            \end{itemize}
+    \end{itemize}
+\end{thmframe}
+
+With this, we see that solution existence in Euclidean $n$-dimensional space can be translatedd in a universally quantified statement in an $m$-dimensional space.
+
+\begin{gframe}{}
+Every Linear Program (the \textbf{primal}) has a \textbf{dual}. The Primal seeks to maximize profit given resource limits, while the Dual seeks to minimize the cost (or weights) of those resources given minimum requirements.
+\end{gframe}
+
+We have two forms of duality.
+\subsection{Weak Duality}
+This proves that the Dual problem acts as an upper bound for the Primal problem:
+
+\noindent
+\colorbox{blue!5}{%
+  \begin{minipage}[t][\height][t]{0.45\textwidth}
+      \textbf{primal problem} \ (here $x \in \mathbb{R}^n$)\\[2mm]
+      $$\max \{c^T x : Ax \le b, x \ge 0\}$$
+      
+      (maximize $c^{T}x$ subject to resource limits $Ax \leq b$)
+  \end{minipage}%
+}%
+\hfill
+\colorbox{green!7}{%
+  \begin{minipage}[t][\height][t]{0.45\textwidth}
+      \textbf{dual problem} \ (here $y \in \mathbb{R}^m$)\\[2mm]
+      $$\min \{b^T y : A^T y \ge c, y \ge 0\}$$
+
+      (minimize $b^{T}y$ subject to minimum requirements $A^{T}y \geq c$)
+  \end{minipage}%
+}
+\vspace{4mm}
+
+We can lik any feasible solution $x$ of the primal and $y$ of the dual through a chain of inequalities:
+$$ c^T x = x^T c \le x^T A^T y = y^T A x = (Ax)^T y \le b^T y $$
+
+And looking at the start and end of the chain:
+$$ \max_{Ax \le b, x \ge 0} c^T x \le \min_{A^T y \ge c, y \ge 0} b^T y $$
+
+\begin{gframe}{}
+This essentially tells us that the highest profit the primal can ever achieve is always trapped beneath or equal to the lowest cost the dual can find. 
+
+(therefore, if a primal is unbounded to $+\infty$, the dual's feasible region must be empty, i.e., $+\infty$).
+\end{gframe}
+
+\subsection{Strong Duality}
+Strong duality is the guarantee that if both the primal and the dual have a finite optimum (neither is unbounded or empty), their optima coincide. 
+
+The highest possible profit exactly equals the lowest possible cost:
+
+\colorbox{ForestGreen!7}{\parbox{\linewidth}{$$\max_{Ax \le b, x \ge 0} c^T x = \min_{A^T y \ge c, y \ge 0} b^T y$$}}
+
+The formulations above is also called \textbf{symmetric} duality, where both problems have non-negativity constraints ($x \ge 0$ and $y \ge 0$). 
+
+If the primal drops its $x \ge 0$ rule (i.e. variables can be negative), the dual can compensate by tightening its constraints from an inequality to a strict equality. 
+
+This is \textbf{asymmetric} duality, and strong duality still holds:
+$$ \max \ \{c^T x : Ax \le b\} = \min \ \{b^T y : A^T y = c, y \ge 0\} $$
+
+\begin{cframe}{ColorLemma}{LP Duality Conversion}{}
+When converting a general Linear Program with mixed constraints and variable bounds to its dual, we use the rules below:
+
+\vspace{3mm}
+\noindent
+\begin{minipage}[t]{0.47\textwidth}
+    \centering
+    \textbf{primal problem (maximize)}\\[1mm]
+    $\max c^T x$
+    \begin{align*}
+        \text{s.t. } \quad 
+        (a_{i,1}, \dots, a_{i,n})x &\le b_i, \quad i \in I_- \\
+        (a_{i,1}, \dots, a_{i,n})x &\ge b_i, \quad i \in I_+ \\
+        (a_{i,1}, \dots, a_{i,n})x &= b_i, \quad i \in I_0 \\[2mm]
+        x_j &\le 0, \quad j \in J_- \\
+        x_j &\ge 0, \quad j \in J_+ \\
+        x_j &\text{ unrestricted}, \quad j \in J_*
+    \end{align*}
+\end{minipage}%
+\hfill
+\vrule width 0.5pt
+\hfill
+\begin{minipage}[t]{0.47\textwidth}
+    \centering
+    \textbf{dual problem (minimize)}\\[1mm]
+    $\min b^T y$
+    \begin{align*}
+        \text{s.t. } \quad 
+        y_i &\ge 0, \quad i \in I_- \\
+        y_i &\le 0, \quad i \in I_+ \\
+        y_i &\text{ unrestricted}, \quad i \in I_0 \\[2mm]
+        (a_{1,j}, \dots, a_{m,j})^T y &\le c_j, \quad j \in J_- \\
+        (a_{1,j}, \dots, a_{m,j})^T y &\ge c_j, \quad j \in J_+ \\
+        (a_{1,j}, \dots, a_{m,j})^T y &= c_j, \quad j \in J_*
+    \end{align*}
+\end{minipage}
+
+\vspace{4mm}
+\begin{itemize}
+    \item a tight constraint ($=$) in one domain creates an unrestricted variable in the other
+    \item a standard inequality ($\le$ in max / $\ge$ in min with $\ge 0$ variables) maps to a non-negative dual counter-part
+\end{itemize}
+\end{cframe}
+
+\begin{gframe}{}
+   Often, we encounter minimization problems instead of maximization ones. The principle of duality also applies to these.
+
+In general, we have that:
+\begin{itemize}
+    \item the primal bound tells us what solution quality can guaranteedly be achieved (certificate)
+    \item the dual bound gives us guaranteed limitations for optimality (feasibility will not be possible after violating this limit)
+\end{itemize} 
+\end{gframe}
+
+To calculate whether a pair of primal and dual solutions is optimal, we can use \textit{complementary slackness}.
+
+\begin{gframe}{slack}
+    In any inequality constraint like $a_i x \le b_i$, \textit{slack} is the leftover amount of a resource: $\text{slack}_i = b_i - a_i x$.
+
+\begin{itemize}
+    \item if $\text{slack}_i = 0$, the constraint holds with exact equality ($a_i x = b_i$) - the constraint is active or binding ($100\%$ of the resource was used)
+    \item if $\text{slack}_i > 0$, we have leftover capacity (the constraint is inactive)
+\end{itemize}
+\end{gframe}
+
+\begin{thmframe}{Complementary Slackness}{}
+Let $x^* \in \mathbb{R}^n$ and $y^* \in \mathbb{R}^m$ be feasible solutions for the primal LP and dual LP respectively. The following three statements are equivalent:
+\begin{enumerate}
+    \item $x^*$ and $y^*$ are optimal solutions
+    \item $c^T x^* = b^T y^*$ (strong duality holds)
+    \item complementary slackness holds for all $i=1,\dots,m$ and $j=1,\dots,n$:
+    \begin{align*}
+        y_i^* \cdot \left( \sum_{j=1}^n a_{i,j}x_j^* - b_i \right) &= 0 \quad \forall i = 1, \dots, m \\
+        x_j^* \cdot \left( \sum_{i=1}^m a_{i,j}y_i^* - c_j \right) &= 0 \quad \forall j = 1, \dots, n
+    \end{align*}
+\end{enumerate}
+
+Essentially, for any pair of primal/dual variables and constraints, at least one side of the pair must have zero slack:
+\begin{itemize}
+    \item if a primal constraint has leftover capacity ($\text{slack}_i > 0$), its dual multiplier $y_i^*$ must be $0$.
+    \item if a dual variable is positive ($y_i^* > 0$), the corresponding primal constraint must be active ($\text{slack}_i = 0$).
+    \item if a decision variable is produced ($x_j^* > 0$), its corresponding dual constraint must hold with exact equality
+\end{itemize}
+\end{thmframe}
+
+\subsubsection{Modeling the Maximum Flow Problem}
+\begin{gframe}{Flow}
+Given a directed graph $G = (V, E)$, we designate two nodes:
+\begin{itemize}
+    \item a \textit{source} $s$ (where flow originates), with no incoming edges: $N^-(s) = \emptyset$
+    \item a \textit{sink} $t$ (where flow is consumed), with no outgoing edges: $N^+(t) = \emptyset$
+\end{itemize}
+
+Each edge $e \in E$ has a non-negative \textit{capacity} $c_e \ge 0$, representing the maximum amount of flow it can handle. 
+
+A \textbf{flow} is an assignment of values $f_e$ to each edge $e \in E$ such that two laws hold:
+\begin{enumerate}
+    \item \textit{capacity constraint}: the flow on an edge cannot exceed its capacity
+    \item \textit{flow conservation}: for every node except the source and sink, the total flow entering the node must exactly equal the total flow leaving it (what goes in must come out)
+\end{enumerate}
+\end{gframe}
+
+The \textbf{Maximum Flow Problem} asks: what is the maximum amount of total flow we can push from the source $s$ to the sink $t$, while respecting all capacities and conservation rules?
+
+\noindent
+\begin{minipage}[t]{0.45\textwidth}
+    \raggedright
+    \textbf{Problem requirement}\\[2mm]
+    \begin{enumerate}
+        \item digraph $G = (V, E)$, source $s$, i.e., $N^-(s) = \emptyset$, sink $t$, i.e., $N^+(t) = \emptyset$ 
+        \vspace{4.5em}
+        
+        \item capacity $E \ni e \mapsto c_e \in \mathbb{R}_{\ge 0}$ 
+        \vspace{2.5em}
+        
+        \item flow on each edge
+            $$E \ni e \mapsto f_e \in \mathbb{R}_{\ge 0}$$
+        \vspace{3.5em}
+        
+        \item flow conservation, except for $s$ and $t$ \\
+        \textcolor{gray}{\small (what enters an intermediate node must exactly equal what exits it)}
+        
+        \vspace{10.5em}
+        
+        \item find flow $f$ maximizing the cumulative flow leaving the source
+    \end{enumerate}
+\end{minipage}%
+\hfill
+\vrule width 0.5pt
+\hfill
+\begin{minipage}[t]{0.51\textwidth}
+    \raggedright
+    \textbf{LP translation}\\[2mm]
+    \begin{enumerate}
+        \item \textbf{(problem-specific constants)} \\
+        \textcolor{gray}{\small the vertex set $V$ and edge set $E$ determine the dimensions of our LP matrices; the source has no incoming edges ($N^-(s) = \emptyset$) and the sink has no outgoing edges}
+        \vspace{2mm}
+        
+        \item \textbf{(problem-specific constants)} \\
+        \textcolor{gray}{\small the capacities $c_e$ form the right-hand bound vector $b_{cap}$ for our inequality constraints}
+        \vspace{2mm}
+        
+        \item \textbf{LP decision vars:} 
+            $$f_e \in \mathbb{R}, \quad 0 \le f_e \le c_e \ \forall e \in E$$
+            \textcolor{gray}{\small (we map the flow on each edge to a column vector $x = [f_1, \dots, f_m]^T$; the inequality $Ax \le b$ is formed here as $Ix \le b_{cap}$, where the identity matrix $I$ isolates and limits each edge individually)}
+            \vspace{2mm}
+            
+        \item $$\displaystyle \sum_{v \in N^-(w)} f_{vw} = \sum_{v \in N^+(w)} f_{wv} \quad \forall w \in V \setminus \{s, t\}$$ 
+        \vspace{-3mm}
+        \begin{itemize}
+            \item \textcolor{gray}{\small the left sum $\sum_{v \in N^-(w)}$ calculates all flow coming \textbf{into} node $w$ from its in-neighbors}
+            \item \textcolor{gray}{\small the right sum $\sum_{v \in N^+(w)}$ calculates all flow going \textbf{out} of node $w$ to its out-neighbors}
+            \item \textcolor{gray}{\small this forms the equality block $A_{cons} x = 0$. $A_{cons}$ is the \textbf{node-edge incidence matrix}: one row per intermediate node, one column per edge; edges entering the node get $+1$, exiting get $-1$, and unattached get $0$; the bound vector is $0$ because no flow can accumulate}
+        \end{itemize}
+        \vspace{2mm}
+        
+        \item \textbf{maximize} $\displaystyle \sum_{v \in N^+(s)} f_{sv}$
+        \begin{itemize}
+            \item \textcolor{gray}{\small to map this to the standard $\max c^T x$, the cost vector $c$ acts as a (binary) filter}
+            \item \textcolor{gray}{\small for every edge leaving the source $s$, its entry in $c$ is $1$, for all other edges, it is $0$}
+            \item \textcolor{gray}{\small the dot product $c^T x$ therefore isolates and sums only the variables $f_{sv}$, ignoring the rest of the network entirely}
+        \end{itemize}
+    \end{enumerate}
+\end{minipage}
+
+\section{Algorithms and Complexity}
+
+\begin{cframe}{ColorThm}{The Simplex Algorithm}{}
+The Simplex algorithm executes a gradient ascent by navigating along the edges (the 1-skeleton) of a feasible polyhedron, moving from one vertex to an adjacent vertex to increase the objective score.
+
+It is highly effective in practice, but it can be disrupted by geometrical problems and matrix degenerate states.
+
+\begin{itemize}   
+    \item an $n$-dimensional vertex is geometrically defined by the intersection of $n$ independent boundary hyperplanes; a vertex is \textbf{degenerate} when more than $n$ constraints cross at the exact same coordinate point (an over-determined corner)
+    \item because simplex tracks vertices using algebraic combinations of $n$ active constraints (a basis), a degenerate corner possesses multiple valid bases describing the same position; when Simplex pivots at a degenerate vertex, it swaps constraints in its matrix without moving physically in space (this results in a physical step size of $\Delta x = 0$ and zero gain)
+    \item because a zero-step pivot fails to increase the objective score, the algorithm loses its progress mechanism; without a strict tie-breaking rule, Simplex can endlessly cycle through the equivalent algebraic bases of that single degenerate point in an infinite loop
+\end{itemize}
+
+To prevent cycling, \textbf{Bland's Rule} enforces a deterministic hierarchy for selecting pivot variables:
+\begin{itemize}
+    \item if multiple variables qualify to enter or leave the basis, always choose  $x_k$  with the minimum index $k$
+\end{itemize}
+
+\textcolor{gray}{by prioritizing smaller variable indices, Bland's Rule breaks symmetry and guarantees that Simplex cannot re-enter a previously visited basis, forcing the algorithm to break out of degenerate vertices in a finite number of steps}
+\end{cframe}
+
+\begin{itemize}
+    \item Simplex performs extremely well in practice, typically taking a polynomial (expected) number of iterations, with worst-case $\mathcal{O}(2^n)$
+\end{itemize}
+
+\begin{gframe}{Alternative LP Solvers}{}
+\noindent
+\begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \textbf{Ellipsoid Method}\\[1mm]
+    \begin{itemize}
+        \item proved LP $\in$ P (polynomial-time solvable)
+        \item shrinks bounding ellipsoids around the feasible region
+        \item solves LPs with exponentially many constraints if an efficient oracle identifies violated cuts
+        \item impractical due to high numerical instability and slow convergence
+    \end{itemize}
+\end{minipage}%
+\hfill
+\vrule width 0.5pt
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \textbf{Interior Point Method}\\[1mm]
+    \begin{itemize}[leftmargin=*]
+        \item both polynomial-time theoretically and fast in practice
+        \item travels through the interior of the feasible region along the "Central Path"
+        \item extends to non-linear/non-convex optimization, semi-definite programming (SDP), and MILP branch-and-bound solvers
+    \end{itemize}
+\end{minipage}
+\end{gframe}
+
+
+
 
 
 \end{document}
