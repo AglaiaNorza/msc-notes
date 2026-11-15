@@ -11,6 +11,12 @@
 \usepackage{csquotes}
 \MakeOuterQuote{"}
 
+\NewDocumentCommand{\set}{m o}{%
+  \IfValueTF{#2}
+    {\left\{ #1 \;\middle|\; #2 \right\}}
+    {\left\{ #1 \right\}}
+}
+
 \setuniversity{Technische Universität Wien}
 \setcoursename{Algorithmics}
 \setcoursebook{slides}
@@ -1394,11 +1400,11 @@ So, we have that:
 
 We work, WLOG, under the assumption that all our inequalities are in the $\leq $ form (i.e. $I_{+} = I_{0} = \emptyset$).
 
-Therefore, our problem becomes to maximise $c^{T} x$ subject to $(a_{i,1}, a_{i,2}, \dots, a_{i,n})x \leq b_{i}$, with $x \geq 0$.
+Therefore, our problem becomes to maximise $c^\top  x$ subject to $(a_{i,1}, a_{i,2}, \dots, a_{i,n})x \leq b_{i}$, with $x \geq 0$.
 
 (which can also be expressed, in a shorter form, as
 
-$$\text{max}(c^{T} x : x \in \Rn, \ Ax \leq b, \ x>=0)$$
+$$\text{max}(c^\top  x : x \in \Rn, \ Ax \leq b, \ x>=0)$$
 
 )
 
@@ -1406,7 +1412,7 @@ $$\text{max}(c^{T} x : x \in \Rn, \ Ax \leq b, \ x>=0)$$
     The standard form (used for simplex algorothms) is:
 
 \begin{itemize}
-    \item maximising $c^{T} x$
+    \item maximising $c^\top  x$
     \item subject to $Ax = b$
     \item with $x \geq 0$
 \end{itemize}
@@ -1488,7 +1494,7 @@ We have that a normal vector $a$ points to the "upper half space" $H_{+}$ of a h
 \end{itemize}
 \end{cframe}
 
-This way, the \textbf{feasible region} $P$ of an LP ($\max \{c^{T}x : Ax \leq b, \ x \geq 0 \}$) can be seen as an \textit{intersection of $m+n$ halfspaces}:
+This way, the \textbf{feasible region} $P$ of an LP ($\max \{c^\top x : Ax \leq b, \ x \geq 0 \}$) can be seen as an \textit{intersection of $m+n$ halfspaces}:
 \begin{itemize}
     \item the matrix has $m$ rows, so $m$ constraint inequalities forming $m$ halfspaces
     \item the standard form also includes the positive orthant rule $x \geq 0$, which generates $n$ boundary inequalities ($x_{1} \geq 0$, $x_{2} \geq 0$ etc:w
@@ -1571,7 +1577,7 @@ If we consider this geometrically:
 We can see that:
 \begin{itemize}
     \item \textcolor{gray}{note: a \textbf{linear hull} (or span) of a vector $c$, $[c]$, is the infinite line drawn through the origin that follows $c$'s direction forever}
-    \item the vector $c = (1.5, 2)^{T}$ is our objective function, and our goal (in a maximization problem) isto find the point in the feasible (purple) region that extends the furthest in the direction of $c$
+    \item the vector $c = (1.5, 2)^\top $ is our objective function, and our goal (in a maximization problem) isto find the point in the feasible (purple) region that extends the furthest in the direction of $c$
     \item for every feasible point, we can consider how "good" it is, by drawing a $90$-deg line from the dot onto $c$ - the place where it lands is its "score"
 \end{itemize}
 
@@ -1653,6 +1659,7 @@ Any affine function (function consisting of a linear transformation followed by 
 
 
 \begin{defframe}{Convex Hull}{}
+    \label{def:conv_hull}
     Given $M \subseteq \Rn$ and a set of points  $(v^{i})_{i \leq n}$, the \textbf{convex hull} is the smallest possible convex shape that completely wraps up all of the points.
 
     (algebraically, it's the set of all points $x$ that can be formed by a \textit{convex combination} of a finite number of points from $M$.)
@@ -1752,11 +1759,11 @@ We said (in thm \ref{thm:solutions-on-edges}) that the solutions must be on the 
 We want to be more specific, and to prove that they are on \textit{extreme points}.
 
 \begin{thmframe}{Bauer's Maximum Principle}{}
-    When maximising $c^{T}$ over $P = \{x : Ax \leq b\}$, suppose there exists at least one extreme point. Then, either $x \mapsto c^{T}x$ is unbounded on $P$ ($\max = \infty$), or there exists an optimal solution $x_{*}$ among the extreme points of $P$.
+    When maximising $c^\top $ over $P = \{x : Ax \leq b\}$, suppose there exists at least one extreme point. Then, either $x \mapsto c^\top x$ is unbounded on $P$ ($\max = \infty$), or there exists an optimal solution $x_{*}$ among the extreme points of $P$.
 \end{thmframe}
 
 \begin{itemize}
-    \item since our formulation $\max\{c^{T}x | Ax \leq b, \ x \geq 0\}$ has a feasible region in $x \geq 0$, unless the polyhedron is empty, extreme points exist!
+    \item since our formulation $\max\{c^\top x | Ax \leq b, \ x \geq 0\}$ has a feasible region in $x \geq 0$, unless the polyhedron is empty, extreme points exist!
 \end{itemize}
 
 \begin{thmframe}{Finiteness of extreme points}{}
@@ -1830,7 +1837,7 @@ There are actually three ways to define extreme points!
     (for a polyhedron $P$) $x$ is an extreme point of $P$ $\iff $ $x$ is a vertex of $P$
 \end{thmframe}
 
-\section{Duality}
+\subsection{Duality}
 \begin{thmframe}{Farkas' Lemma, 1894}{}
     These two statements are equivalent:
     \begin{itemize}
@@ -1841,8 +1848,8 @@ There are actually three ways to define extreme points!
                 \item we introduce a new vector $y$ in the $m$-dimensional space of the rows (constraints), which acts as a set of \textit{weights} for the constraints
                 \item we check for contradiction: we take all the constraint equations and multiply each one by one by a positive weight and add them up
                     \begin{itemize}
-                        \item $A^{T} y \geq 0$: the weights are s.t. the left side is positive
-                        \item $y^{T} b \geq 0$: the right side (the bounding) is also positive
+                        \item $A^\top  y \geq 0$: the weights are s.t. the left side is positive
+                        \item $y^\top  b \geq 0$: the right side (the bounding) is also positive
                         \item (if we made the left side positive, but the right side somehow negative, the system would be claiming that a positive value is $\le$ a negative value)
                             \subitem so this basically says: if the left side is positive, the right side must also be positive (and there are no contradictions)
                     \end{itemize}
@@ -1857,7 +1864,7 @@ Every Linear Program (the \textbf{primal}) has a \textbf{dual}. The Primal seeks
 \end{gframe}
 
 We have two forms of duality.
-\subsection{Weak Duality}
+\subsubsection{Weak Duality}
 This proves that the Dual problem acts as an upper bound for the Primal problem:
 
 \noindent
@@ -1866,7 +1873,7 @@ This proves that the Dual problem acts as an upper bound for the Primal problem:
       \textbf{primal problem} \ (here $x \in \mathbb{R}^n$)\\[2mm]
       $$\max \{c^T x : Ax \le b, x \ge 0\}$$
       
-      (maximize $c^{T}x$ subject to resource limits $Ax \leq b$)
+      (maximize $c^\top x$ subject to resource limits $Ax \leq b$)
   \end{minipage}%
 }%
 \hfill
@@ -1875,7 +1882,7 @@ This proves that the Dual problem acts as an upper bound for the Primal problem:
       \textbf{dual problem} \ (here $y \in \mathbb{R}^m$)\\[2mm]
       $$\min \{b^T y : A^T y \ge c, y \ge 0\}$$
 
-      (minimize $b^{T}y$ subject to minimum requirements $A^{T}y \geq c$)
+      (minimize $b^\top y$ subject to minimum requirements $A^\top y \geq c$)
   \end{minipage}%
 }
 \vspace{4mm}
@@ -1892,7 +1899,7 @@ This essentially tells us that the highest profit the primal can ever achieve is
 (therefore, if a primal is unbounded to $+\infty$, the dual's feasible region must be empty, i.e., $+\infty$).
 \end{gframe}
 
-\subsection{Strong Duality}
+\subsubsection{Strong Duality}
 Strong duality is the guarantee that if both the primal and the dual have a finite optimum (neither is unbounded or empty), their optima coincide. 
 
 The highest possible profit exactly equals the lowest possible cost:
@@ -1992,24 +1999,6 @@ Essentially, for any pair of primal/dual variables and constraints, at least one
 \end{thmframe}
 
 \subsubsection{Modeling the Maximum Flow Problem}
-\begin{gframe}{Flow}
-Given a directed graph $G = (V, E)$, we designate two nodes:
-\begin{itemize}
-    \item a \textit{source} $s$ (where flow originates), with no incoming edges: $N^-(s) = \emptyset$
-    \item a \textit{sink} $t$ (where flow is consumed), with no outgoing edges: $N^+(t) = \emptyset$
-\end{itemize}
-
-Each edge $e \in E$ has a non-negative \textit{capacity} $c_e \ge 0$, representing the maximum amount of flow it can handle. 
-
-A \textbf{flow} is an assignment of values $f_e$ to each edge $e \in E$ such that two laws hold:
-\begin{enumerate}
-    \item \textit{capacity constraint}: the flow on an edge cannot exceed its capacity
-    \item \textit{flow conservation}: for every node except the source and sink, the total flow entering the node must exactly equal the total flow leaving it (what goes in must come out)
-\end{enumerate}
-\end{gframe}
-
-The \textbf{Maximum Flow Problem} asks: what is the maximum amount of total flow we can push from the source $s$ to the sink $t$, while respecting all capacities and conservation rules?
-
 \noindent
 \begin{minipage}[t]{0.45\textwidth}
     \raggedright
@@ -2071,10 +2060,28 @@ The \textbf{Maximum Flow Problem} asks: what is the maximum amount of total flow
     \end{enumerate}
 \end{minipage}
 
-\section{Algorithms and Complexity}
+\begin{gframe}{Flow}
+Given a directed graph $G = (V, E)$, we designate two nodes:
+\begin{itemize}
+    \item a \textit{source} $s$ (where flow originates), with no incoming edges: $N^-(s) = \emptyset$
+    \item a \textit{sink} $t$ (where flow is consumed), with no outgoing edges: $N^+(t) = \emptyset$
+\end{itemize}
+
+Each edge $e \in E$ has a non-negative \textit{capacity} $c_e \ge 0$, representing the maximum amount of flow it can handle. 
+
+A \textbf{flow} is an assignment of values $f_e$ to each edge $e \in E$ such that two laws hold:
+\begin{enumerate}
+    \item \textit{capacity constraint}: the flow on an edge cannot exceed its capacity
+    \item \textit{flow conservation}: for every node except the source and sink, the total flow entering the node must exactly equal the total flow leaving it (what goes in must come out)
+\end{enumerate}
+\end{gframe}
+
+The \textbf{Maximum Flow Problem} asks: what is the maximum amount of total flow we can push from the source $s$ to the sink $t$, while respecting all capacities and conservation rules?
+
+\subsection{Algorithms and Complexity}
 
 \begin{cframe}{ColorThm}{The Simplex Algorithm}{}
-The Simplex algorithm executes a gradient ascent by navigating along the edges (the 1-skeleton) of a feasible polyhedron, moving from one vertex to an adjacent vertex to increase the objective score.
+The Simplex algorithm executes a gradient ascent by navigating along the edges of a feasible polyhedron, moving from one vertex to an adjacent vertex to increase the objective score.
 
 It is highly effective in practice, but it can be disrupted by geometrical problems and matrix degenerate states.
 
@@ -2122,7 +2129,471 @@ To prevent cycling, \textbf{Bland's Rule} enforces a deterministic hierarchy for
 \end{minipage}
 \end{gframe}
 
+\section{Mixed Integer Linear Programming}
+Mixed Integer Linear Programming is a tool better suited to model and solve real-world optimization problems. It provides a rich modeling language, which can be applied to a wide variety of problems, and it mostly requires no specialized algorithms.
 
+The [better] expressivity comes from the domains of the decision variables, which can be required to take integer (or boolean) values.
+
+\begin{defframe}{(Pure) Integer Linear Program}{}
+    This is a problem in which the decision variables \textit{only} take integer values.
+\begin{align*}
+  \max \quad & c^\top x \\
+  \text{subject to} \quad & Ax \le b \\
+  & x \ge 0 \quad \text{and} \quad x \in \mathbb{Z}^n
+\end{align*}
+
+\begin{tabular}{r c l}
+  $c$ & \dots & $n$-dimensional vector \\
+  $x$ & \dots & $n$-dimensional vector \\
+  $A$ & \dots & $m \times n$ matrix \\
+  $b$ & \dots & $m$-dimensional vector
+\end{tabular}
+    
+\end{defframe}
+
+
+\begin{defframe}{Mixed Integer Linear Program}{}
+
+Here, we can have $p$ variables (the $x$s) that take integer values, and $n$ (the $y$s, called \textit{fractional} variables) that take continuous values.
+\begin{align*}
+  \max \quad & c^\top x + d^\top  y \\
+  \text{subject to} \quad & Ax + Gy \le b \\
+  & x \ge 0 \quad \text{and} \quad x \in \mathbb{Z}^n\\
+  & y \ge 0
+\end{align*}
+
+\begin{tabular}{r c l}
+  $c$ & \dots & $n$-dimensional vector \\
+  $x$ & \dots & $n$-dimensional vector \\
+  $d$ & \dots & $p$-dimensional vector \\
+  $y$ & \dots & $p$-dimensional vector \\
+  $A$ & \dots & $m \times n$ matrix \\
+  $G$ & \dots & $m \times p$ matrix \\
+  $b$ & \dots & $m$-dimensional vector
+\end{tabular}
+
+\begin{gframe}{}
+    Since the decision variables are partitioned into two sets, everything else (the objective function and the constraint matrices) is as well.
+\end{gframe}
+
+We can also visually "stack" the discrete and continuous components:
+$$
+  \max \quad \begin{bmatrix} c^\top & d^\top \end{bmatrix} \begin{bmatrix} x \\ y \end{bmatrix}
+$$
+$$
+  \text{s.t.} \quad \begin{bmatrix} A & G \end{bmatrix} \begin{bmatrix} x \\ y \end{bmatrix} \le b, \quad x \in \mathbb{Z}_{\ge 0}^n, \, y \in \mathbb{R}_{\ge 0}^p
+$$
+
+\vspace{0.5em}
+\begin{center}
+  \begin{tikzpicture}[scale=0.75, every node/.style={transform shape}]
+    \draw[thick, fill=blue!10] (0,0) rectangle (1.8,2.4) node[pos=.5] {$A$ ($m \times n$)};
+    \draw[thick, fill=green!10] (1.8,0) rectangle (3.6,2.4) node[pos=.5] {$G$ ($m \times p$)};
+    \node at (1.8,-0.4) {$\underbrace{\hspace{3.6cm}}_{\text{combined matrix } [A \,\, G]}$};
+
+    \node at (4.0,1.2) {$\cdot$};
+    \draw[thick, fill=blue!20] (4.4,1.2) rectangle (5.2,2.4) node[pos=.5] {$x$};
+    \draw[thick, fill=green!20] (4.4,0) rectangle (5.2,1.2) node[pos=.5] {$y$};
+    \node at (5.5,1.2) {$\begin{bmatrix} x \\ y \end{bmatrix}$};
+
+    \node at (6.1,1.2) {$\le$};
+    \draw[thick, fill=gray!15] (6.6,0) rectangle (7.3,2.4) node[pos=.5] {$b$};
+  \end{tikzpicture}
+\end{center}
+    
+\end{defframe}
+
+
+\begin{defframe}{Binary Integer Linear Program}{}
+Here, our decision variables can only take \textit{binary} values.
+\begin{align*}
+  \max \quad & c^\top x \\
+  \text{subject to} \quad & Ax \le b \\
+  & 0 \leq x \leq 1\\
+  & x \in \Z^{n} 0
+\end{align*}
+
+\begin{tabular}{r c l}
+  $c$ & \dots & $n$-dimensional vector \\
+  $x$ & \dots & $n$-dimensional vector \\
+  $A$ & \dots & $m \times n$ matrix \\
+  $b$ & \dots & $m$-dimensional vector
+\end{tabular}
+
+\begin{gframe}{}
+    Since the decision variables are partitioned into two sets, everything else (the objective function and the constraint matrices) is as well.
+\end{gframe}
+
+\end{defframe}
+
+\subsection{Modeling Problems}
+
+\begin{cframe}{ColorThm}{Combinatorial Optimization Problem (COP)}
+    A \textbf{Combinatorial Optimization Problem} consists in finding the most cost-effective or profitable combination of items from a (finite) set, subject to a set of rules.
+
+    Unlike LP, a COP forces discrete choices.
+
+    The mathematical framework for a COP is made up of:
+    \begin{itemize}
+        \item a finite set $N = \{1, \dots, N\}$
+        \item weights $c_{j}, j \in N$
+        \item a set $\mathcal{F}\subseteq 2^{n}$ of feasible subsets
+    \end{itemize}
+
+    The goal is to find a \textit{minimum-weight} feasible subset:
+    $$ \text{argmin}_{S \in \mathcal{F}} \{ \sum_{j \in S} c_{j}  \} $$
+
+    \textcolor{gray}{(argmin because we don't want the minimum cost, but the set that causes the minimum cost)}
+\end{cframe}
+
+Many NP-hard problems can be solved via ILP! Consequently, \textbf{ILP is NP-hard} (however, LP is poly-time solvable) (and, to solve ILP, we cannot just round optimal LP solutions).
+
+We want to find ways to model combinatorial optimization problems effectively and efficiently (simply enumerating solutions is too costly).
+
+\begin{cframe}{ColorLemma}{MILPS with a jump in the cost function}
+Sometimes, we encounter functions where the cost is zero when $x$ is zero, but then it jumps up by a constant:
+
+$$ h:[0, C] \to \R_{\geq 0}, \quad h(x) := \begin{cases}
+    0 & \text{if } x = 0 \\\\
+    ax + b & \text{ if } 0 < x \leq  C
+\end{cases} 
+$$
+
+Linear Programming can only handle "straight", continuous lines.
+
+To fix this, we can use a "switch":
+\begin{itemize}
+    \item we introduce a new binary variable $y \in \set{0,1}$
+    \item we rewrite the cost formula to include said switch
+        $$ \min ax+by $$
+    \item we make it so that the solver turns the switch on for values greater than zero, and off for zero; we can do this with a constraint of the form
+        $$ x \leq C y $$
+        \begin{itemize}
+            \item this works because, if $y=0$, $x\leq C \cdot 0$ means $x=0$
+            \item and if $y=1$, $x\leq C \cdot 1$ means $x \leq  C$
+        \end{itemize}
+        \subitem \color{gray} note! $x = 0, y = 1$ is technically allowed, but, since we are minimizing cost, it will never be chosen (e.g. $0 + C$is always greater than $0 + 0$, so the solver will choose $y=0$)
+\end{itemize}
+
+\end{cframe}
+
+\begin{cframe}{ColorLemma}{Modeling disjunctions}
+By default, constraints in a MILP problem are "AND" statements.
+
+Therefore, we need to take extra steps if we want to model ORs.
+
+The way this can be achieved is by "turning off" some constraints, by adding an arbitrarily large constant to the inequations, making the constraint practically unsatisfiable.
+
+Let's assume that we have a variable $x \in \Rn$, with $0 \leq x \leq u$ (where $u$ is a given constant vector), and that we want to model constraints of the type:
+$$ a_{1}^{\top}x \leq b_{1} \text{ or } a_{2}^{\top} \leq b_2 $$
+\textcolor{gray}{where $b_1, b_2$ are constant bounds}
+
+What we can do is:
+\begin{itemize}
+    \item introduce \textit{auxiliary binary variables} $y_1, y_2 \in \set{0,1}$ (with $y_{i} = 1$ representing the choice of "activating" the $i$-th rule)
+    \item we add a simple "OR" constraint: $y_{1}+y_{2}=1$ (so this is an \textit{exclusive} or on the switch - there's no need to model an OR with something like $\geq 1$, as it is enough for one of them to be true (these are constraints, and we don't want to check more constraints, so only checking one is better))
+    \item we add an OR constraint: $y_{1} + y_{2} = 1$ 
+        \subitem \textcolor{gray}{\small (this acts as a XOR on the switches, but it still models an inclusive OR for the constraints: if a solution happens to satisfy both constraints, the solver only needs to enforce one of them for the formulation to remain valid; so, a weaker constraint like $y_{1} + y_{2} \geq 1$ is unnecessary)}
+    \item we rewrite the original $a_{i}$ constraints and link them to the switches with a very big constant $M$:
+        $$ a_{i}^{\top}x - b_{i} \leq M(1-y) \quad i \in \set{1,2} $$
+
+\end{itemize}
+
+\end{cframe}
+
+        \begin{gframe}{How it works}
+            Assume the solver decides to enforce rule 1 ($y_1 = 1$) (so, $y_2 = 0$):
+
+\begin{itemize}
+    \item \textit{rule 1 ($y_1 = 1$):}
+    \begin{align*}
+        a_1^\top x - b_1 &\leq M(1 - 1) \\
+        a_1^\top x - b_1 &\leq 0 \\
+        a_1^\top x &\leq b_1
+    \end{align*}
+    the $M$ term becomes 0, and the rule is enforced exactly as originally written
+
+    \item \textit{rule 2 ($y_2 = 0$):}
+    \begin{align*}
+        a_2^\top x - b_2 &\leq M(1 - 0) \\
+        a_2^\top x - b_2 &\leq M \\
+        a_2^\top x &\leq b_2 + M
+    \end{align*}
+    the constraint boundary is pushed up by $M$; since $M$ is very big, this new ceiling never restricts the solver's choices, and rule 2 gets ``turned off''
+\end{itemize}
+        \end{gframe}
+
+
+
+\subsubsection{Assignment Problem}
+Let us consider the assignment problems, where we are given:
+\begin{itemize}
+    \item a set of tasks $T = \set{1, \dots, n}$ and one of people $J = \set{1, \dots, n}$
+    \item individual cost $c_{i,j} \in \R_{\geq 0}$ of assigning person $j$ to task $i$
+\end{itemize}
+
+The goal is to find a person-to-task assignment (a permutation) $\pi : \set{1, \dots, n} \to \set{1, \dots, n}$ of minimum cost $\sum_{i=1}^{n} c_{i, \pi(i)}$.
+
+We can model this as a BILP problem as follows:
+
+\begin{itemize}
+    \item \textit{variables}: $x_{i,j}\in \set{0,1}, \ \forall i,j \in \set{1, \dots, n}$
+        \subitem $x_{i,j} = 1$ iff a person $j$ is assigned to task $i$
+    \item \textit{constraints}: 
+        \begin{itemize}
+            \item each task $i$ is done by exactly one person:
+                $$ \sum_{j=1}^{n} x_{i,j} = 1 \quad \quad \forall i \in \set{1, \dots, n} $$
+            \item each person $j$ does exactly one task:
+                $$ \sum_{i=1}^{n} x_{i,j} = 1 \quad \quad \forall j \in \set{1, \dots, n} $$
+        \end{itemize}
+    \item \textbf{objective function}: minimize the total assignment cost
+        $$ \min \sum_{i=1}^{n} \sum_{j=1}^{n} c_{ij}x_{ij}  $$
+
+        $\sum_{n=a}^{\infty} $
+\end{itemize}
+
+
+\subsubsection{0-1 Knapsack Problem}
+Given:
+\begin{itemize}
+    \item projects $\set{1, \dots, n}$
+    \item plannning cost $c_{i} \leq 0$ for every project $i$
+    \item net profit $p_{i} \geq 0$ from realizing project $i$ (with cost already subtracted)
+    \item available budget $B \geq 0$
+\end{itemize}
+
+The goal is to find a subset of project maximizing the profit while not exceeding the budget.
+
+This can be modeled as a BILP problem as follows:
+\begin{itemize}
+    \item \textit{decision variables}: $x_{i} = 1$ iff project $i$ is chosen
+    \item \textit{constraints}:
+        \begin{itemize}
+            \item \textit{the budget is not exceeded}:
+                $$ \sum_{i=1}^{n} c_{i} x_{i} \leq B  $$
+        \end{itemize}
+    \item \textbf{objective function}: maximise the net profit
+        $$\max \sum_{i=1}^{n} p_{i} x_{i} $$
+\end{itemize}
+
+\subsubsection{Set Covering Problem (with costs)}
+Given:
+\begin{itemize}
+    \item potential locations for fire stations $\set{l_1, \dots, l_{n}}$
+    \item cost $c_{j}$ for building a station at location $l_{j}$
+    \item regions $\set{r_1, \dots , r_{m}}$ that have to be serviced in case of fire
+    \item it is known that the regions in $S_{l_{j}} \subseteq \set{r_1, \dots r_{m}}$ can be reached within 5 minutes from location $l_{j}$
+\end{itemize}
+
+The goal is to find a set of locations for fire stations with minimal total building costs, and each region must be reachable within 5 minutes from some built fire station.
+
+Modeling:
+\begin{itemize}
+    \item \textit{variables}: $x_{l_{j}}$ iff fire station is built at location $l_{j}$
+    \item \textit{constraints}:
+        \begin{itemize}
+            \item each region has to be reachable within 5 minutes by at least one fire station
+                \subitem we pre-process the fire stations, and set a filter $a_{ij} =1$ iff the travel time from location $j$ to region $i$ is of 5 minutes or less
+                $$ \sum_{j=1}^{n} a_{ij}x_{lj} \geq 1 $$
+            \item since $a_{ij}$ is $0$ for any station too far away, those stations are filtered out (and the $\geq 0$ forces the solver to consider at least one station in the 5min filter for any region)
+        \end{itemize}
+    \item \textbf{objective function}: minimize the total building costs:
+        $$ \min \sum_{j=1}^{n} c_{j}x_{l_{j}} $$
+\end{itemize}
+
+\subsubsection{Uncapacitated Facility Location Problem}
+Given:
+\begin{itemize}
+    \item $M = \set{1, \dots, m}$ clients, all requesting $1$ unit of traffic
+    \item $N = \set{1, \dots , n}$ of servers that can be activated
+    \item one-time activation cost $f_{j}$ for server $j$
+    \item cost $c_{ij}$ of satisfying the $i$-th customer's traffic via server $j$
+\end{itemize}
+
+We want to decide which servers to activate, and to coordinate (per client) the right set of servers satisfying their traffic, s.t. the sum of server-activation costs $+$ the resulting traffic costs are minimum
+
+(essentially, opening a facility costs $x$, once open, it costs money to route traffic, amounts per client differ, and there is no maximum capacity of clients per facility)
+
+(we could open one facility close per client, with low routing costs but high opening costs, or open only one facility for all clients, but the routing costs would be very high - this is the optimization to be done)
+
+Modeling:
+\begin{itemize}
+    \item \textit{variables}:
+        \subitem continuous variable $0 \leq x_{i,j} \leq 1 \in M$, $j \in N$: for client $i$ and server $j$, the fraction of client $i$'s traffic that is routed to server $j$
+        \subitem binary variable $y_{j} \in \set{0,1}$ $\forall j \in N: y_{j} = 1 $ iff server $j$ is activated
+    \item \textit{constraint}: 
+        \begin{itemize}
+            \item the traffic of every client has to be satisfied:
+                $$ \sum_{j \in N} x_{i,j} = 1  $$
+                \subitem (for any client, the sum of traffic fractions routed across all available servers must be $1$ ($100\%$))
+            \item relationship between routing and activation:
+                $$ x_{ij} \leq y_{j} $$
+                \subitem $y_{j}$ acts as a ceiling: if server $j$ is offline ($y_{j} = 0$), then $x_{ij}$ is forced to be $\leq 0$ (so there is no traffic to a closed server); if $y_{j} = 1$, then $x_{ij}$ can take whatever value up to $1$
+        \end{itemize}
+    \item \textbf{objective function}: minimize the sum of all costs:
+        $$ \min \sum_{i \in M} \sum_{j \in N} c_{ij}x_{ij}+ \sum_{j \in n} f_{j}y_{j}$$
+\end{itemize}
+
+\subsection{Formulation}
+
+\begin{defframe}{Formulation}{}
+    A polyhedron $P \subseteq \R^{n+p}$ is a \textbf{formulation} for a set $X \subseteq \Z^{n}\times \R^{p}$ iff $X = P \cap (\Z^{n} \times \R^{p})$.
+
+    \textcolor{gray}{a polyhedron is a formulation for a discrete set of answers iff the entire grid of whole numbers inside of $P$ match $X$ exactly (no more, no less)}
+\end{defframe}
+
+There can be infinitely many formulations for a same set $X$:
+
+\begin{center}
+    \includegraphics[scale=0.3]{assets/formulations.png}
+\end{center}
+
+But ! They're not all equally "good": if a polyhedron is too "loose", the solver, which will look at its corners, will take longer to "chop away" the excess space (the corners are too far from the whole points).
+
+That's why we can compare polyhedron by tightness: a formulation $P_{1}$ is \textbf{tighter} than $P_2$ if $P_{1}$ is (properly) inside $P_{2}$ ($P_1 \subsetneq P_2$).
+
+\begin{defframe}{Ideal Formulation}{}
+    A formulation $P$ for a set $X \subseteq \Z^{n}\times \R^{p}$ is \textbf{ideal} iff $P = \text{conv}(X)$ (that is, if $P$ is $X$'s \textit{convex hull} (see def \ref{def:conv_hull}))
+\end{defframe}
+
+Many COP can be expressed via different ILP models, that share a set of core variables, but not \textit{all} variables. 
+
+Suppose we have two formulations for the same integral set $X \subseteq \Z^n$:
+\begin{itemize}
+    \item a \textit{core formulation} $P_1 \subseteq \R^n$ using only the original $n$ decision variables $x$:
+    $$ \max \{ c^\top x : x \in P_1 \cap \Z^n \} $$
+    \item an \textit{extended formulation} $P_2 \subseteq \R^n \times \R^p$ that keeps the core variables $x$, but introduces $p$ extra variables $y$:
+    $$ \max \{ c^\top x : (x,y) \in P_2 \cap (\Z^n \times \R^p) \} $$
+\end{itemize}
+
+In both models, the objective function is still $\max c^\top x$, and the $y$ variables do not appear in it (they are auxiliary variables that appear in the constraints to get tighter bounds).
+
+We can't just check whether $P_2 \subsetneq P_1$, because $P_2$ lives in a higher-dimensional space ($\R^{n+p}$) than $P_1$ ($\R^n$) (points in $P_2$ have $n+p$ coordinates, whereas points in $P_1$ only have $n$).
+
+To compare them on equal footing, we first have to project $P_2$ down into the $x$-space:
+
+\begin{defframe}{Projection}{}
+    The \textbf{projection} of a polyhedron $P_2 \subseteq \R^n \times \R^p$ onto the subspace $\R^n$, denoted $\text{proj}_x P_2$, is defined as:
+    $$ \text{proj}_x P_2 = \{ x \in \R^n : (x,y) \in P_2 \text{ for some } y \in \R^p \} $$
+\end{defframe}
+
+We classify $P_2$ as tighter than $P_1$ if $\text{proj}_{x} P_2 \subsetneq P_1$
+
+\begin{gframe}{Example: 2D to 3D}
+Let $X = \{0,1\} \subseteq \Z^1$.
+\begin{itemize}
+    \item let $P_1 = \{ x \in \R : 0 \le x \le 1.5 \}$ - leaves fractional slack on $(1, 1.5]$.
+    \item let $P_2 = \{ (x,y) \in \R^1 \times \R^1 : 0 \le x \le y, \; y \le 1 \}$ (a 2D triangle with corners $(0,0)$, $(0,1)$, and $(1,1)$).
+\end{itemize}
+Projecting $P_2$ onto $x$ removes $y$: any $x \in [0,1]$ can be paired with $y = x$ to satisfy $0 \le x \le y \le 1$, whereas any $x > 1$ has no valid partner $y \le 1$. 
+
+Thus, $\text{proj}_x P_2 = [0,1] \subsetneq [0, 1.5] = P_1$, proving $P_2$ is tighter.
+
+\end{gframe}
+
+\subsection{Traveling Salesperson Problem}
+
+\subsubsection{Miller--Tucker--Zemlin (MTZ)}
+
+Given
+
+\begin{itemize}
+    \item a complete digraph $G = (N, \set{(i,j) \in N, i \neq j})$
+    \item a set of vertices $N = \set{1, \dots, n}$ representing cities
+    \item edge costs $c_{ij} \in \R$ (cost of travel)
+\end{itemize}
+
+The goal is to find a Hamiltonian cycle (a single tour visiting every city once) of minimum total traveling cost.
+
+This formulation models this as a MILP as follows:
+\begin{itemize}
+    \item \textit{variables:}
+    \begin{itemize}
+        \item $x_{ij} \in \set{0,1}$ for all $i,j \in N$ with $i \neq j$, where $x_{ij} = 1$ iff the salesperson travels directly from city $i$ to city $j$.
+        \item $u_i \in \R$ for all $i \in N \setminus \set{1}$ (continuous auxiliary variables indicating the visit order / timestamp of city $i$, treating city $1$ as the start/end).
+    \end{itemize}
+    
+
+
+    \item \textit{Constraints:}
+    \begin{align*}
+        \sum_{j \in N, \, j \neq i} x_{ij} &= 1 && \forall i \in N \tag{1: leave each city once} \\
+        \sum_{i \in N, \, i \neq j} x_{ij} &= 1 && \forall j \in N \tag{2: arrive at each city once} \\
+        u_i + x_{ij} &\leq u_j + M(1 - x_{ij}) && \forall i,j \in N \setminus \set{1}, \; i \neq j \tag{3: ordering / Big-$M$} \\
+        1 \leq u_i &\leq n - 1 && \forall i \in N \setminus \set{1} \tag{4: timestamp bounds}
+    \end{align*}
+    where $M := n - 2$ is chosen large enough to deactivate constraint (3) whenever $x_{ij} = 0$.
+ \item \textit{objective function:} minimize total traveling cost:
+    $$ \min \sum_{i \in N} \sum_{j \in N, \, j \neq i} c_{ij} x_{ij} $$
+\end{itemize}
+
+\begin{gframe}{Constraints 3 and 4}
+Constraints (1) and (2) alone only guarantee that every city has \textit{out-degree $1$} and \textit{in-degree $1$}. However, they don't actually force the graph to stay connected in a single loop. Without constraints (3) and (4), the solver could cheat by splitting the cities into multiple disconnected cycles (subtours), if doing so avoids expensive connecting roads.
+
+Constraints (3) and (4) eliminate subtours, by acting like "timestamps": $u_i$ records when each "intermediate" city is visited (from step $1$ up to step $n-1$):
+\begin{itemize}
+    \item if edge $(i,j)$ is not used ($x_{ij} = 0$), constraint (3) becomes $u_i \leq u_j + (n-2)$; since $u_i \leq n-1$ and $u_j \geq 1$, this inequality holds automatically and restricts nothing
+    \item if edge $(i,j)$ is used ($x_{ij} = 1$), the Big-$M$ term becomes $0$ and constraint (3) simplifies to $u_i + 1 \leq u_j$, forcing the timestamp to increase by at least $1$ along every traveled edge
+\end{itemize}
+
+Suppose a solution contained two or more subtours.
+
+At least one subtour would not contain city $1$. Pick any city $v \neq 1$ on that subtour and follow the arrows around the cycle back to $v$: the timestamp $u$ must increase at every step, meaning the final arrow returning into $v$ would require $u_v > u_v$ (contradiction).
+
+City $1$ is excluded from constraints (3) and (4), which allows the single valid tour to close back at the end.
+\end{gframe}
+
+\subsubsection{Single-Commodity Flow Formulation (SCF)}
+This formulation prevents subtours without Big-$M$ node timestamps. 
+
+Instead, city $1$ acts as a depot sending out $n-1$ units of a single commodity (one ``package'' for each of the other $n-1$ cities), and every visited city consumes$1$ unit.
+
+We keep the binary edge variables $x_{ij} \in \set{0,1}$ ($i \neq j$), the objective function, and the in-/out-degree constraints, and introduce:
+\begin{itemize}
+    \item \textit{additional variables:} $f_{ij} \in \R$ for all $i,j \in N$ ($i \neq j$), representing the continuous amount of flow (packages) transported along edge $(i,j)$.
+    \item \textit{additional constraints:}
+    \begin{align*}
+        \sum_{j \in N, \, j \neq 1} f_{1j} &= n - 1 \tag{5: depot sends out $n-1$ units} \\
+        \sum_{i \in N, \, i \neq j} f_{ij} - \sum_{k \in N, \, k \neq j} f_{jk} &= 1 && \forall j \in N \setminus \set{1} \tag{6: flow conservation / consumption} \\
+        0 \leq f_{ij} &\leq (n - 1) x_{ij} && \forall i,j \in N, \; i \neq j \tag{7: edge capacity / linking gate}
+    \end{align*}
+\end{itemize}
+
+\begin{gframe}{No subtours}
+\begin{itemize}
+    \item constraint (7) acts as an on/off gate: if edge $(i,j)$ is not selected ($x_{ij} = 0$), then $f_{ij} = 0$; thus, flow can only travel along chosen tour edges
+    \item constraint (6) enforces $\text{inflow}_j - \text{outflow}_j = 1$, so the flow decreases by $1$ unit at every city $j$
+    \item Suppose by contradiction that there are two or more subtours. 
+
+        At least one subtour avoids city $1$; pick any vertex $v \neq 1$ on this subtour and let $F$ be the flow entering $v$. Since no outside edges feed into this closed subtour and the flow drops by $1$ at each of its $L \geq 2$ vertices, the flow returning into $v$ around the cycle must equal $F - L$. Closing the loop requires $F - L = F \implies L = 0$, a contradiction. 
+
+        (City $1$ is exempt from constraint (6), so the empty truck with $f_{i1} = 0$ can return to city $1$ at the end of the tour.)
+\end{itemize}
+
+\end{gframe}
+
+\subsubsection{Multi-Commodity Flow Formulation (MCF)}
+This formulation refines SCF by sending $n-1$ distinct, personalized commodities from city $1$: one specific commodity $k \in N \setminus \set{1}$ addressed to each destination city $k$.
+
+We keep the binary edge variables $x_{ij} \in \set{0,1}$ ($i \neq j$), the objective function, and the in-/out-degree constraints, and introduce:
+\begin{itemize}
+    \item \textit{additional variables:} $f_{ij}^k \in \R$ for all $i,j \in N$ ($i \neq j$) and all $k \in N \setminus \set{1}$, representing the continuous flow of commodity $k$ along edge $(i,j)$.
+    \item \textit{additional constraints:}
+    \begin{align*}
+        \sum_{j \in N, \, j \neq 1} f_{1j}^k &= 1 && \forall k \in N \setminus \set{1} \tag{8: depot sends $1$ unit of $k$} \\
+        \sum_{i \in N, \, i \neq k} f_{ik}^k &= 1 \quad \text{and} \quad \sum_{j \in N, \, j \neq k} f_{kj}^k = 0 && \forall k \in N \setminus \set{1} \tag{9: sink $k$ absorbs $k$} \\
+        \sum_{i \in N, \, i \neq j} f_{ij}^k - \sum_{i \in N, \, i \neq j} f_{ji}^k &= 0 && \forall j, k \in N \setminus \set{1}, \; j \neq k \tag{10: transit conservation} \\
+        0 \leq f_{ij}^k &\leq x_{ij} && \forall i,j \in N, \; i \neq j, \; \forall k \in N \setminus \set{1} \tag{11: individual edge gate}
+    \end{align*}
+\end{itemize}
+
+\begin{gframe}{No subtours}
+\begin{itemize}
+    \item Suppose by contradiction that two or more subtours arise. Pick any vertex $v \neq 1$ on a subtour avoiding city $1$, and consider the specific commodity $k := v$ destined for $v$.
+    \item By constraint (9), $v$ sends none of commodity $v$ onward ($\sum_{j \neq v} f_{vj}^v = 0$). Since constraint (11) restricts flow strictly to the subtour's chosen edges and constraint (10) enforces $\text{Inflow} = \text{Outflow}$ at every other vertex on the loop, the flow of commodity $v$ on every edge of the subtour must be $0$.
+    \item Consequently, the edge entering $v$ carries $0$ units of commodity $v$, contradicting the sink requirement $\sum_{i \neq v} f_{iv}^v = 1$ in (9). (City $1$ is exempt from (9) and (10), allowing it to act as the source for all commodities.)
+\end{itemize}
+\end{gframe}
 
 
 
