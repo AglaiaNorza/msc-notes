@@ -13,6 +13,14 @@
 
 \usepackage{listings}
 
+\NewDocumentCommand{\set}{m o}{%
+  \IfValueTF{#2}
+    {\left\{ #1 \;\middle|\; #2 \right\}}
+    {\left\{ #1 \right\}}
+}
+
+\newcommand{\gen}[1]{\langle #1 \rangle}
+\newcommand{\LT}{\operatorname{LT}}
 
 \usepackage{csquotes}
 \usepackage{todonotes}
@@ -1402,18 +1410,18 @@ Therefore, if two different systems of polynomials generate the exact same ideal
 
 \textcolor{gray}{so, our objectives are now to (a) see if every ideal can be represented via a base, (b) find a way to get better bases, (c) find an algorithm to decide whether a polynomial is in the ideal}
 
-\section{Polynomials in one variable}
+\section{Polynomials in One Variable}
 \begin{defframe}{Leading Term, Degree}{}
     Let $f = a_{m}x^{m}+a_{m-1}x^{m-1}+ \dots + a_{0} \in \K[x]$ with $a_{m} \neq 0$.
 
     We say that
-    $$ \text{LT}(f) = a_{m}x^{m} \quad \text{is the \textbf{leading term}} $$
+    $$ \LT(f) = a_{m}x^{m} \quad \text{is the \textbf{leading term}} $$
     $$ \text{deg}(f) = m\quad \text{is the \textbf{degree}} $$
 \end{defframe}
 
 \begin{thmframe}{Division}{}
     We have that, for non-zero $f$, $g$:
-    $$\text{deg}(f) \leq \text{deg}(g) \iff \text{LT}(f) \text{ divides } \text{LT}(g)$$
+    $$\text{deg}(f) \leq \text{deg}(g) \iff \LT(f) \text{ divides } \LT(g)$$
 \end{thmframe}
 
 
@@ -1463,6 +1471,7 @@ $q \leftarrow 0$; \quad $r \leftarrow f$\;
 For example, $\K[x]$ and $\Z$ are PIDs, but $\K[x, y]$ is not a PID, as it needs two generators.
 
 \begin{thmframe}{Ideal Membership in a PID}{}
+    \label{thm:ideal_PID}
     Since $\K[x]$ is a PID, every ideal has a single generator $h$.
 
     If $h \neq 0$, we have that:
@@ -1607,6 +1616,469 @@ grevlex & $x^2$ & $xy$ & ${y^2}$ & ${xz}$ & $yz$ & $z^2$ & $x$ & $y$ & $z$ & $1$
     \item grlex: first by degree, monomials of the same degree as in lex
     \item grevlex: first by degree, then fewer of the last variable: $y^2 >_{\mathrm{grevlex}} xz$
 \end{itemize}
+
+Now that we have defined some orderings, we can get to understanding what "leading" means when we consider multiple variables.
+
+\begin{defframe}{Leading Terms in Several Variables}{}
+    Let $f = \sum_{\alpha} a_{\alpha}x^{\alpha} \neq 0$, and fix a monomial order $>$.
+
+    We have that the:
+    \begin{itemize}
+        \item \textbf{multidegree}: $\text{multideg}(f) = \max \set{\alpha}[a_{\alpha} \neq 0]$
+            \subitem in fields like $\K[x, y]$, knowing the total degree is ambiguous, as $x^{2}y$ and $x^{3}$ both have degree $3$; so, we can update the degree from an integer to the exponent vector $\alpha$, from which we pick the highest according to our preferred sorting 
+        \item \textbf{leading coefficient}: LC$(f) = a_{\text{multideg}(f)}$
+            \subitem the leading coefficient is the coefficient of the biggest monomial
+        \item \textbf{leading monomial}: LM$(f) = x^{\text{multideg}(f)}$
+            \subitem the leading monomial is the variable part of the biggest monomial, without hte ccoefficient
+        \item \textbf{leading term}: LT$(f) = \text{LC}(f) \cdot \text{LM}(f)$
+            \subitem the leading term re-multiplies the coefficient and the variale of the biggest monomial
+    \end{itemize}
+\end{defframe}
+
+\begin{gframe}{Example}
+\noindent
+\begin{tabular}{@{}l@{\quad}l@{\quad}l@{\quad}l@{\quad}l@{}}
+lex:     & $\mathrm{multideg}(f) = (3, 0, 0),$ & $\mathrm{LC}(f) = -5,$ & $\mathrm{LM}(f) = x^3,$    & $\mathrm{LT}(f) = -5x^3$ \\
+grlex:   & $\mathrm{multideg}(f) = (2, 0, 2),$ & $\mathrm{LC}(f) = 7,$  & $\mathrm{LM}(f) = x^2z^2,$ & $\mathrm{LT}(f) = 7x^2z^2$ \\
+grevlex: & $\mathrm{multideg}(f) = (1, 2, 1),$ & $\mathrm{LC}(f) = 4,$  & $\mathrm{LM}(f) = xy^2z,$  & $\mathrm{LT}(f) = 4xy^2z$ \\
+\end{tabular}
+\end{gframe}
+
+\subsection{Dividing by Several Polynomials}
+Given $f$ and an ordered tuple $F = (f_1, \dots, f_s)$, we want to write:
+$$ f = a_1f_1 + \dots + a_{s}f_{s} + r $$
+
+The idea is the same as with one variable: to repeatedly cancel the leading term of the current polynomial:
+\begin{itemize}
+    \item division step: if some LT$(f_{i})$ divides LT$(p)$, we take the \textit{first} such $i$:
+        $$ a_{i} \leftarrow a_{i} + \frac{\LT(p)}{\LT(f_{i})} \quad \quad p \leftarrow p - \frac{\LT(p)}{\LT(f_{i})} $$
+    \item remainder step: otherwise, move LT$(p)$ to the remainder:
+        $$ r \leftarrow r + \LT(p) \quad \quad p \leftarrow p - \LT(p) $$
+    \item stop when $p = 0$
+\end{itemize}
+
+\begin{gframe}{Example}
+    Divide $f = x^2y + xy^2 + y^2$ by $F = (xy - 1,\; y^2 - 1)$, lex with $x > y$.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{lllll}
+\hline
+current $p$ & step & $a_1$ & $a_2$ & $r$ \\
+\hline
+$x^2y + xy^2 + y^2$ & divide by $f_1$: $+x$ & $x$ & & \\
+$xy^2 + x + y^2$ & divide by $f_1$: $+y$ & $x + y$ & & \\
+$x + y^2 + y$ & $xy \nmid x,\; y^2 \nmid x$: \textcolor{purple}{remainder step} & $x + y$ & & $x$ \\
+$y^2 + y$ & divide by $f_2$: $+1$ & $x + y$ & $1$ & $x$ \\
+$y + 1$ & remainder step & $x + y$ & $1$ & $x + y$ \\
+$1$ & remainder step & $x + y$ & $1$ & $x + y + 1$ \\
+\hline
+\end{tabular}
+\end{center}
+$$
+x^2y + xy^2 + y^2 = (x + y)(xy - 1) + 1 \cdot (y^2 - 1) + (x + y + 1)
+$$
+\end{gframe}
+
+
+\begin{thmframe}{Division Theorem}{}
+    Fix a monomial order and an ordered tuple $F = (f_{1}, \dots , f_{s})$. Every $f \in \K[x_1, \dots , x_{n}]$ can be written as:
+    $$ f = a_1 f_1 + \dots + a_{s} f_{s} + r $$
+    where $r = 0$ or no monomial of $r$ is divisible by any of LT$(f_1), \dots , \LT(f_{s})$.
+
+    Moreover, $\text{multideg}(f) \geq \text{multideg}(a_{i}f_{i})$ whenever $a_{i}f_{i} \neq 0$.
+\end{thmframe}
+
+Furthermore, we have that:
+\begin{itemize}
+    \item $r$ is the \textit{remainder}, written $\text{rem}_{F}(f)$
+    \item the invariant $f = a_{1}f_1 + \dots + a_{s} f_{s} + p + r$ holds
+    \item the algorithm always terminates, as $\text{multideg}(p)$ decreases (strictly), and $>$ is a well-ordering
+\end{itemize}
+
+\begin{algorithm}[H]
+\NoCaptionOfAlgo
+\caption{Multivariate Division}
+\KwIn{$f$ and $F = (f_1, \dots, f_s)$}
+\KwOut{$a_1, \dots, a_s, r$ with $f = a_1 f_1 + \dots + a_s f_s + r$}
+$a_1, \dots, a_s \leftarrow 0$; \quad $r \leftarrow 0$; \quad $p \leftarrow f$\;
+\While{$p \neq 0$}{
+    \eIf{$\mathrm{LT}(f_i) \mid \mathrm{LT}(p)$ for some $i$}{
+        choose the smallest such $i$\;
+        $a_i \leftarrow a_i + \mathrm{LT}(p) / \mathrm{LT}(f_i)$\;
+        $p \leftarrow p - (\mathrm{LT}(p) / \mathrm{LT}(f_i)) \cdot f_i$ \tcp*{division step}
+    }{
+        $r \leftarrow r + \mathrm{LT}(p)$; \quad $p \leftarrow p - \mathrm{LT}(p)$ \tcp*{remainder step}
+    }
+}
+\Return{$(a_1, \dots, a_s, r)$}
+\end{algorithm}
+
+Unlike univariate division, multivariate division does \textbf{not} produce a unique remainder: whenever multiple leading terms $\mathrm{LT}(f_i)$ divide $\mathrm{LT}(p)$, reordering the divisors in $F$ changes which divisor gets applied and gives a different remainder. And worse, generators can hide lower-order elements of the ideal via leading-term cancellations, leaving a nonzero remainder even when $f$ actually is in the ideal:
+\begin{itemize}
+    \item $r = 0 \implies f \in \langle f_1, \dots, f_s \rangle$ \quad (still holds, since $f = a_1 f_1 + \dots + a_s f_s$)
+    \item $f \in \langle f_1, \dots, f_s \rangle \not\Rightarrow r = 0$ \quad (in general)
+\end{itemize}
+Consequently, division by an arbitrary basis is only a one-sided test; deciding ideal membership reliably requires a \textbf{Gr\"obner basis}, for which remainders are unique and $f \in I \iff r = 0$.
+
+\subsection{Monomial Ideals}
+\begin{defframe}{Monomial Ideal}{}
+    An ideal $I \subseteq \K[x_1, \dots, x_{n}]$ is a \textbf{monomial ideal} if it is generated by monomials:
+    $$ I = \langle x^{\alpha} : \alpha \in A \rangle \quad \quad \text{ for some (possibly infinite) } A \subseteq \N^{n}_{0}$$
+
+    Its elements are the finite sums $\sum_{\alpha \in A} h_{\alpha}x^{\alpha}$ with $h_{\alpha} \in \K[x_1, \dots, x_{n}]$.
+\end{defframe}
+
+\begin{thmframe}{Membership in a Monomial Ideal}{}
+    $x^{\beta} \in \langle x^{\alpha} : \alpha \in A\rangle \iff x^{\beta}$ is divisible by some $x^{\alpha}, \ \alpha \in A$
+\end{thmframe}
+
+If we look at this from a geometric point of view, we have that
+$$ x^{\alpha} | x^{\beta} \iff \beta = \alpha + \gamma \quad \text{for some } \gamma \in \N^{n}_{0} $$
+(you can multiply $x^{\alpha}$ for another monomial $x^{\gamma}$ to get $x^{\beta}$).
+
+If we consider monomials in two variables $x^{a}y^{b}$, every monomial is completely determined by its exponents $(a,b)\in \N^{2}_{0}$.
+
+If we plot $a$ on the $x$ axis (it's the $x$ exponent) and $b$ on the $y$ axis, we have that:
+\begin{itemize}
+    \item $1 = x^{0} y^{0}$ is at the origin $(0,0)$
+    \item $x^{4} y^{2}$ is at $(4,2)$
+    \item $x^{3} y^{4}$ is at $(3,4)$
+    \item $x^{2} y^{5}$ is at $(2,5)$, etc
+\end{itemize}
+
+Since polynomial exponents cannot be negative, every monomial sits in the \textbf{first quadrant} (axes included).
+
+On the grid, since multiplying two monomials $x^{a}y^{v} \cdot x^{c}y^{d}$ adds exponents $(= x^{a+c}y^{b+d})$, the geometric equivalent means that you can only step up and/or right from a starting monomial \textcolor{gray}{(as you cannot multiply by negative exponents, which would give you a subtraction and allow you to move left/down)}.
+\vspace{-0.5em}
+\begin{center}
+\begin{tikzpicture}[scale=0.5]
+    \fill[cyan!12] (4,2) rectangle (7,7);
+
+    \draw[step=1, gray!30, thin] (0,0) grid (7,7);
+    \foreach \x in {1,...,6} {
+        \foreach \y in {1,...,6} {
+            \fill[gray!60] (\x,\y) circle (1.2pt);
+        }
+    }
+
+    \draw[teal!80!black, very thick] (4,7) -- (4,2) -- (7,2);
+
+    \draw[->, thick, gray!80!black] (0,0) -- (7.4,0);
+    \draw[->, thick, gray!80!black] (0,0) -- (0,7.4);
+    \node[gray!80!black, below] at (6.0,-0.15) {$x$-exponent};
+    \node[gray!80!black, above] at (0,7.4) {$y$-exponent};
+
+    \fill[red!85!black] (4,2) circle (3pt) node[below=3pt] {$x^4y^2$};
+\end{tikzpicture}
+\end{center}
+
+So, we get that the set of all multiples of a monomial like $x^{4}y^{2}$ is the infinite L-shaped corner anchored at $(4, 2)$ and extending up and to the right:
+$$(4, 2) + \mathbb{N}_0^2 = \{(a, b) \in \mathbb{N}_0^2 : a \ge 4 \text{ and } b \ge 2\}$$.
+
+We saw from the theorem above that a monomial is in an ideal if it is a multiple of \textit{at least one} of the generators. 
+
+Therefore, geometrically, we need to take the \textbf{union} of the regions of multiples of every monomial:
+
+\begin{center}
+    \begin{tikzpicture}[scale=0.65]
+    \fill[cyan!12] (2,7) -- (2,5) -- (3,5) -- (3,4) -- (4,4) -- (4,2) -- (7,2) -- (7,7) -- cycle;
+
+    \draw[step=1, gray!30, thin] (0,0) grid (7,7);
+    \foreach \x in {1,...,6} {
+        \foreach \y in {1,...,6} {
+            \fill[gray!60] (\x,\y) circle (1.2pt);
+        }
+    }
+    \draw[teal!80!black, very thick] (2,7) -- (2,5) -- (3,5) -- (3,4) -- (4,4) -- (4,2) -- (7,2);
+
+    \draw[->, thick, gray!80!black] (0,0) -- (7.4,0);
+    \draw[->, thick, gray!80!black] (0,0) -- (0,7.4);
+    \node[gray!80!black, below] at (6.0,-0.15) {$x$-exponent};
+    \node[gray!80!black, above] at (0,7.4) {$y$-exponent};
+
+    \fill[red!85!black] (2,5) circle (3pt) node[below left=1pt] {$x^2y^5$};
+    \fill[red!85!black] (3,4) circle (3pt) node[below left=1pt] {$x^3y^4$};
+    \fill[red!85!black] (4,2) circle (3pt) node[below=3pt] {$x^4y^2$};
+\end{tikzpicture}
+\end{center}
+
+This visualization can be helpful, as:
+\begin{itemize}
+    \item a monomial is in $I$ if and only if its exponent is in the blue region
+    \item it can be helpful to spot "redundant" generators: if we were to add $x^{5}y^{3}$, for example, that would already sit inside the bkue area, and it would not add any information about the ideal
+\end{itemize}
+
+\subsection{Polynomials in Monomial Ideals}
+
+\begin{thmframe}{Membership of Polynomials in Monomial Ideals}{}
+    Let $I$ be a monomial ideal, and $f \in \K[x_1, \dots , x_{n}]$. Then:
+    $$ f \in I \iff \text{ every term of } f \text{ lies in } I $$
+\end{thmframe}
+
+\begin{corframe}{}
+    Two monomial ideals are \textbf{equal} if and only if they \textbf{contain the same monomials}.
+\end{corframe}
+
+For example, given $I = \langle x^{4}y^{2}, x^{3}y^{4}, x^{2}y^{5} \rangle$
+\begin{itemize}
+    \item $3x^{5}y^{3} - x^{2}y^{6} \in I$ (both terms are in $I$)
+    \item $x^{5}y^{3} + xy \not \in I$ ($xy \not \in I$)
+\end{itemize}
+
+\begin{thmframe}{Dickinson's Lemma}{}
+    Every monomial ideal $I$ is generated by \textbf{finitely many} of its generators:
+    $$ I = \langle x^{\alpha(1)}, \dots , x^{\alpha(s)} \quad \text{ with } \alpha(1), \dots , \alpha(s) \in A$$
+
+\textcolor{gray}{this is intuitive, as laying down infinitely many upper-right quadrants still just forms a staircase; because grid coordinates are whole numbers $\ge 0$, a staircase can only step down finitely many times before hitting $0$, so it can only ever have finitely many inside corners}
+\end{thmframe}
+
+\section{Grobner Bases}
+
+\subsection{The Ideal of Leading Terms}
+If we fix a monomial order, every $f \neq 0$ has a unique leading term LT$(f)$.
+
+\begin{defframe}{Ideal of Leading Terms}{}
+    For an ideal $I \neq \{0\}$:
+    \begin{itemize}
+        \item LT$(I)= \set{cx^{\alpha}}[\text{ there is } f \in I \text{ with LT}(f) = cx^{\alpha} ]$ (the set of leading terms of polynomials in the ideal)
+        \item $\langle \LT(I) \rangle$ is the ideal generated by these leading terms
+    \end{itemize}
+\end{defframe}
+
+For $I = \langle f_1, \dots , f_{s} \rangle$, we always have that
+$$ \langle \LT(f_1), \dots , \LT(f_{s}) \rangle \subseteq \langle \LT(I) \rangle $$
+but the inclusion can be strict, as combinations of the $f_{i}$ can have new leading terms.
+
+For example, if we have $I = \langle f_1, f_2\rangle$ with $f_1 = x^{3} - 2xy$, $f_2 = x^{2}y - 2y^{2}+x$, and the grlex order
+
+we have that
+
+$$ x \cdot f_2 - y \cdot f_1 = (x^{3}y -2xy^{2}+x^{2})-(x^{3}y-2xy^{2}) = x^{2}$$
+\begin{itemize}
+    \item $x^{2} \in I$, so $x^{2} \in \langle \LT(I) \rangle$
+    \item but LT$(f_1) = x^{3}$ and LT$(f_2)=x^{2}y$ do not divide $x^{2}$
+\end{itemize}
+therefore
+$$ x^{2} \not\in \langle x^{3} x^{2}y \rangle = \langle\LT(f_1) \LT(f_2) \rangle$$
+
+\begin{gframe}{}
+    The leading terms of the generators don't "see" the whole ideal.
+\end{gframe}
+
+\subsection{Hilbert Basis Theorem, Grobner Bases}
+
+\begin{propframe}{}{}
+    For every ideal $I \subseteq \K[x_1, \dots , x_{n}]$:
+    \begin{itemize}
+        \item $\langle\LT(I) \rangle$ is a monomial ideal
+        \item there are $g_1, \dots , g_{t} \in I$ with $\langle \LT(I) \rangle = \gen{\LT(g_1), \dots, \LT(g_{t})}$ (per Dickson's Lemma)
+    \end{itemize}
+\end{propframe}
+
+\begin{thmframe}{Hilbert Basis Theorem}{}
+    Every ideal $I \subseteq \K[x_1, \dots , x_{n}]$ is finitely generated: 
+    $$ I = \gen{g_1, \dots , g_{t}} $$
+\end{thmframe}
+
+Let $I \subseteq \mathbb{K}[x_1, \dots, x_n]$ be a nonzero ideal (if $I = \{0\}$, it is trivially generated by $0$). 
+
+We need to prove that $I$ can be generated by a \emph{finite} list of polynomials
+
+\begin{enumerate}
+    \item Because $\langle \mathrm{LT}(I) \rangle$ is a \emph{monomial ideal}, Dickson's Lemma guarantees that finitely many generators suffice to generate it:
+    \[
+    \langle \mathrm{LT}(I) \rangle = \langle \mathrm{LT}(g_1), \dots, \mathrm{LT}(g_t) \rangle.
+    \]
+
+    \item $\langle g_1, \dots, g_t \rangle \subseteq I$, since each $g_i \in I$.
+
+        To show the reverse inclusion $I \subseteq \langle g_1, \dots, g_t \rangle$, take an arbitrary polynomial $f \in I$ and run the Multivariate Division Algorithm using $(g_1, \dots, g_t)$ as divisors:
+    \[
+    f = a_1 g_1 + \dots + a_t g_t + r.
+    \]
+    Rearranging gives $r = f - (a_1 g_1 + \dots + a_t g_t)$. Since $f \in I$ and every $g_i \in I$, the remainder $r$ must also lie in $I$.
+
+    \item Suppose that $r \neq 0$.
+
+        Because $r \in I$, its leading term $\mathrm{LT}(r)$ belongs to $\langle \mathrm{LT}(I) \rangle = \langle \mathrm{LT}(g_1), \dots, \mathrm{LT}(g_t) \rangle$. 
+
+        By the property of monomial ideals, $\mathrm{LT}(r)$ must therefore be divisible by $\mathrm{LT}(g_i)$ for at least one $i$. However, the Division Theorem guarantees that \emph{no} term of a remainder $r$ is divisible by any $\mathrm{LT}(g_i)$: contradiction.
+\end{enumerate}
+
+\noindent Thus $r = 0$, meaning $f = a_1 g_1 + \dots + a_t g_t \in \langle g_1, \dots, g_t \rangle$ for every $f \in I$. 
+
+Hence $I = \langle g_1, \dots, g_t \rangle$ is finitely generated, and the generating sets $\{g_1, \dots, g_t\}$ are what we call \textbf{Gr\"obner bases}.
+
+\begin{defframe}{Gr\"obner basis}{}
+    (Having fixed a monomial order,) a finite subset $G = \set{g_1, \dots , g_{t}} \subseteq I$ is a Gr\"obner basis (/standard basis) of $I$ if:
+    $$ \gen{\LT(g_1), \dots , \LT(g_{t})} = \gen{\LT(I)} $$
+
+    Equivalently: the leading term of every $f \in I$ is divisible by some $\LT(g_{i})$.
+\end{defframe}
+
+\begin{corframe}{}
+    Every ideal $I \neq \gen{0}$ has a Gr\"obner basis, and every Gr\"obner basis of $I$ generates $I$.
+\end{corframe}
+
+\underline{Not a Gr\"obner basis:}
+
+
+$f_1 = x^3 - 2xy$ and $f_2 = x^2y - 2y^2 + x$ under \texttt{grlex}, generating $I = \langle f_1, f_2 \rangle$.
+    \begin{itemize}
+        \item $xf_2 - yf_1 = x^2 \in I$ 
+        \item (        \item $x^2 \notin \langle x^3, x^2y \rangle = \langle \mathrm{LT}(f_1), \mathrm{LT}(f_2) \rangle$ 
+        \item for $G$ to be a Gröbner basis of an ideal, the leading term of every polynomial inside $I$ must be divisible by at least one of the leading terms of your generators ($LT(f_1)$ or $LT(f_2)$, and $x^{2}$ is not divisible by either
+    \end{itemize}
+    Thus $\{f_1, f_2\}$ is not a Gr\"obner basis of $I$.
+
+    \underline{A Gr\"obner basis:}
+
+
+$\{x + z, y - z\}$ under \texttt{lex} with $x > y > z$, generating $J = \langle x + z, y - z \rangle$.
+    \begin{itemize}
+        \item every $f \in J$ with $f \neq 0$ must satisfy $x \mid \mathrm{LT}(f)$ or $y \mid \mathrm{LT}(f)$
+        \item thus $\{x + z, y - z\}$ is a Gr\"obner basis of $J$
+    \end{itemize}
+
+
+    \begin{gframe}{Easy Cases}
+        There are two easy cases of Gr\"obner bases:
+        \begin{itemize}
+            \item ideals generated by one polynomial $\gen{f}$: $\set{f}$ is always a Gr\"obner basis
+                \subitem any element of $\gen{f}$ is of the form $hf$, and $\LT(hf) = \LT(h)\LT(f)$ is divisible by $\LT(f)$
+            \item ideals in one variable (in $\K[x]$): we have that $\set{\text{GCD}(f_1, \dots , f_{s})}$ is a Gr\"obner basis of $\gen{f_1, \dots , f_{s}}$ ($\K[x]$ is a Principle Ideal Domain, see Thm \ref{thm:ideal_PID})
+        \end{itemize}
+    \end{gframe}
+
+\subsubsection{$S$-Polynomials}
+Consider a polynomial combination $h_1 g_1 + \dots + h_t g_t \in I$. 
+
+If the leading terms of the pieces $h_i g_i$ do not cancel each other out, then the leading term of the sum is simply whichever $\LT(h_i g_i) = \LT(h_i)\LT(g_i)$ is largest—which is automatically divisible by $\LT(g_i)$.
+
+Thus, a ``hidden'' leading term can only appear when two or more leading terms cancel at the top.
+
+An $S$-polynomial is made to trigger the minimal possible leading-term cancellation between two polynomials $f$ and $g$.
+
+\begin{defframe}{$S$-polynomial}{}
+    Let $f, g \neq 0$ and let $x^{\gamma} = \text{LCM}(\text{LM}(f), \text{LM}(g))$ \textcolor{gray}{(the smallest monomial that both $\text{LM}(f)$ and $\text{LM}(g)$ divide; any larger common cancellation is just a monomial multiple of this one)}.
+    $$ S(f,g) = \frac{x^{\gamma}}{\LT(f)} \cdot f - \frac{x^{\gamma}}{\LT(g)} \cdot g $$
+\end{defframe}
+
+\noindent Key properties to keep in mind:
+\begin{itemize}
+    \item  because $x^\gamma$ is a common multiple of $\text{LM}(f)$ and $\text{LM}(g)$, both quotients $\frac{x^\gamma}{\LT(f)}$ and $\frac{x^\gamma}{\LT(g)}$ are valid polynomials, so $S(f,g) \in \langle f, g \rangle$
+    \item unlike in one variable, $\text{LM}(S(f,g))$ can have a \emph{higher} degree than both $\text{LM}(f)$ and $\text{LM}(g)$ because we scale them up to $x^\gamma$ before subtracting; the only drop guaranteed is $\text{LM}(S(f,g)) < x^\gamma$
+\end{itemize}
+
+
+\begin{thmframe}{Buchberger's Criterion}{}
+    A basis $G = \set{g_1, \dots g_{t}}$ of $I$ is a Gr \"obner basis if and only if for all $i \neq j$, the remainder of $S(g_{i}, g_{j})$ on division by $G$ is $0$.
+\end{thmframe}
+
+This means that we can calculate whether a basis is a Gr\"obner basis in finitely many checks (one per pair of polynomials).
+
+\begin{gframe}{Actually}
+More generally, it suffices that $S(g_i, g_j) \to_G 0$, meaning we can write
+$$ S(g_i, g_j) = \sum_{k=1}^{t} a_k g_k \quad \text{with} \quad \text{multideg}(a_k g_k) \le \text{multideg}(S(g_i, g_j)) $$
+for all $k$ with $a_k g_k \neq 0$ (this is called a \emph{standard representation}).
+
+\begin{itemize}
+    \item we saw that the remainder of multivariate division can depend on the order in which the divisors $(g_1, \dots, g_t)$ are listed; this condition removes that ambiguity, as we don't need to test all divisor orderings (or even follow the division algorithm): any step-by-step reduction using elements of $G$ that reaches $0$ is enough
+    
+    \item because $S(g_i, g_j)$ is always an element of $I = \langle g_1, \dots, g_t \rangle$, we can \emph{always} write $S(g_i, g_j) = \sum a_k g_k$ for some polynomials $a_k$, even when $G$ is \emph{not} a Gröbner basis: that's why we need $\text{multideg}(a_k g_k) \le \text{multideg}(S(g_i, g_j))$ (we can't "cheat" by temporarily jumping to higher-degree terms and cancelling them back down).
+
+        because no piece can exceed $\text{multideg}(S(g_i, g_j))$, at least one term $a_k g_k$ must match $\LT(S(g_i, g_j))$ directly, guaranteeing that $\LT(g_k)$ divides $\LT(S(g_i, g_j))$.
+    
+    \item for example, for $f_1 = x^3 - 2xy$ and $f_2 = x^2y - 2y^2 + x$ (\texttt{grlex}), we have $S(f_1, f_2) = -x^2 = y f_1 - x f_2$; though this expresses $S(f_1, f_2)$ as a combination of $f_1$ and $f_2$, it violates the degree bound:
+    $$ \text{multideg}(y f_1) = \text{multideg}(x^3y) = (3,1) \not\le (2,0) = \text{multideg}(-x^2). $$
+    (it relies on creating and cancelling the higher-degree term $x^3y$, which is why $\{f_1, f_2\}$ fails to be a Gröbner basis)
+\end{itemize}
+
+
+\end{gframe}
+
+\subsubsection{Buchberger's Algorithm}
+We now have a finite test (Buchberger's Criterion) to check whether a basis is a Gröbner basis, but we've seen that a set like $\{y - x^2, z - x^3\}$ can pass under one monomial order (lex $y > z > x$) and fail under another (lex $x > y > z$) when an $S$-polynomial leaves a nonzero remainder $-xy + z$. 
+
+Buchberger's algorithm "repairs" the situation: whenever an $S$-polynomial doesn't reduce to $0$, it adds the non-zero remainder into the generating set to "patch the hole".
+
+\begin{algorithm}[H]
+\caption{Buchberger's Algorithm}
+\KwIn{finite $F \subseteq \mathbb{K}[x_1, \dots, x_n]$, monomial order}
+\KwOut{Gröbner basis $G$ with $\langle G \rangle = \langle F \rangle$}
+$G \leftarrow F$\;
+$C \leftarrow \{\{g_1, g_2\} : g_1, g_2 \in G,\; g_1 \neq g_2\}$\;
+\While{not all pairs in $C$ are marked}{
+    choose an unmarked pair $\{g_1, g_2\} \in C$ and mark it\;
+    $h \leftarrow \text{remainder of } S(g_1, g_2) \text{ on division by } G$\;
+    \If{$h \neq 0$}{
+        $C \leftarrow C \cup \{\{g, h\} : g \in G\}$\;
+        $G \leftarrow G \cup \{h\}$\;
+    }
+}
+\Return{$G$}\;
+\end{algorithm}
+
+Given a finite generating set $F$ and a monomial order,
+we keep track of the current basis $G$ and a working set $C$ of unordered pairs $\set{g_1, g_2}$ to check, and:
+\begin{itemize}
+    \item we start with $G = F$ and put every pair $\set{g_1, g_2}$ from $G$ to $C$
+    \item we pick an unmarked pair $\set{g_1, g_2}\in C$, mark it as checked and compute the remainder $h$ of $S(g_1, g_2)$ divided by $G$
+    \item if $h = 0$, Buchberger's criterion is satisfied, so we move on
+    \item if $h\neq 0$, then $\LT(h)$ has a "hidden" leading term that none the current generators couldn't divide:
+    \begin{itemize}
+        \item we form all new pairs $\set{g, h}$ for every $g \in G$ and add them to $C$
+        \item we add $h$ to $C$
+    \end{itemize}
+\item we repeat until every pair in $C$ has been marked, and return $G$
+\end{itemize}
+
+The ideas behind the algorithm are:
+\begin{itemize}
+    \item whenever an $S$-polynomial doesn't reduce to $0$, we add its remainder to the basis - this way, $h$ is now a divisor, and the remainder becomes $0$
+    \item the algorithm is correct, as:
+        \begin{itemize}
+            \item every $S(g_1, g_2)$ is a combination of elements in $G$, and dividing it by $G$ gives us
+                $$ S(g_1,g_2) = \sum a_{i} g_{i} +h \iff h = S(g_1, g_2) - \sum a_{i} g_{i} \in G $$ (since $h$ was already in the ideal generated by $G$, adding it to $G$ doesn't change the ideal)
+            \item when the while ends, every pair has been checked and has remainder $0$, so the result is definitely a Gr\"obner basis
+        \end{itemize}
+    \item the algorithm terminates, as no new $\LT(h)$ is divisible by an earlier leading term; by Dickinson's Lemma, $\gen{\LT(I)}$ is finitely generated, and there are only finitely many new leading terms, so the algorithm must at some point stop producing non-zero remainders
+\end{itemize}
+
+\begin{gframe}{Example}
+Let $F = \{f_1, f_2\} = \{x^3 - 2xy,\; x^2y - 2y^2 + x\}$ with \texttt{grlex} and $x > y$
+
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{llll}
+\hline
+\textit{pair} & \textit{$s$-polynomial} & \textit{remainder} & \textit{action} \\
+\hline
+$\{f_1, f_2\}$ & $-x^2$ & $-x^2$ & add $f_3 = -x^2$ \\
+$\{f_1, f_3\}$ & $-2xy$ & $-2xy$ & add $f_4 = -2xy$ \\
+$\{f_1, f_4\}$ & $-2xy^2 = y \cdot f_4$ & $0$ & \\
+$\{f_2, f_3\}$ & $-2y^2 + x$ & $-2y^2 + x$ & add $f_5 = -2y^2 + x$ \\
+all other pairs & & $0$ & \\
+\hline
+\end{tabular}
+\end{center}
+
+\noindent\textit{result:} $G = \{x^3 - 2xy,\; x^2y - 2y^2 + x,\; -x^2,\; -2xy,\; -2y^2 + x\}$ is a Gröbner basis
+
+\noindent \textcolor{gray}{($-x^2 \in \text{LT}(G)$, the ``hidden'' leading term from before)}
+
+\end{gframe}
+
+
+
+
+
+
+
+
+
+
 
 
 \chapter{Program Analysis}
