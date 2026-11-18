@@ -303,7 +303,7 @@ A language $L$ belongs in the class $\Pi_{k}$ if its defining logical statement 
         \item e.g. $x \in L \in \Pi_{2} \iff \forall u_1 \exists u_2 : R(x, u_1, u_2)$.
     \end{itemize}
 
-$\Pi_{k}$ is the complement of $\Sigma_{k}$): $\Pi_{i} = \{L : \bar{L} \in \Sigma_{i}\}$ (negating the satatement swaps every $\exists  $ with a $\forall  $)
+$\Pi_{k}$ is the complement of $\Sigma_{k}$): $\Pi_{i} = \{L : \overline{L} \in \Sigma_{i}\}$ (negating the satatement swaps every $\exists  $ with a $\forall  $)
 \end{cframe}
 
 \begin{itemize}
@@ -2589,11 +2589,335 @@ We keep the binary edge variables $x_{ij} \in \set{0,1}$ ($i \neq j$), the objec
 
 \begin{gframe}{No subtours}
 \begin{itemize}
-    \item Suppose by contradiction that two or more subtours arise. Pick any vertex $v \neq 1$ on a subtour avoiding city $1$, and consider the specific commodity $k := v$ destined for $v$.
-    \item By constraint (9), $v$ sends none of commodity $v$ onward ($\sum_{j \neq v} f_{vj}^v = 0$). Since constraint (11) restricts flow strictly to the subtour's chosen edges and constraint (10) enforces $\text{Inflow} = \text{Outflow}$ at every other vertex on the loop, the flow of commodity $v$ on every edge of the subtour must be $0$.
-    \item Consequently, the edge entering $v$ carries $0$ units of commodity $v$, contradicting the sink requirement $\sum_{i \neq v} f_{iv}^v = 1$ in (9). (City $1$ is exempt from (9) and (10), allowing it to act as the source for all commodities.)
+    \item suppose by contradiction that there are two or more subtours; pick any vertex $v \neq 1$ on a subtour avoiding city $1$, and consider the specific commodity $k := v$ destined for $v$
+    \item by constraint (9), $v$ sends none of commodity $v$ onward ($\sum_{j \neq v} f_{vj}^v = 0$); since constraint (11) restricts flow to the subtour's chosen edges and constraint (10) enforces $\text{inflow} = \text{outflow}$ at every other vertex on the loop, the flow of commodity $v$ on every edge of the subtour must be $0$
+    \item consequently, the edge entering $v$ carries $0$ units of commodity $v$, contradicting the sink requirement $\sum_{i \neq v} f_{iv}^v = 1$ in (9). (city $1$ is exempt from (9) and (10), and it acts as the source for all commodities)
 \end{itemize}
 \end{gframe}
+
+We can compare the tightness of the different formulations (by comparing their projections onto the shared variables $x_{ij}$):
+$$ P_{\text{MCF}} \prec P_{\text{SCF}} \prec P_{\text{MTZ}} $$
+
+MCF is the tightest formulation with the strongest LP relaxation bounds.However, duplicating the $n(n-1)$ edge flow variables and conservation rules across $n-1$ separate commodities increases its size from $O(n^2)$ to $O(n^3)$:
+
+\begin{center}
+\begin{tabular}{lll}
+    \hline
+    formulation & \#variables & \#constraints \\
+    \hline
+    MTZ & $n(n-1) + (n-1)$ & $n^2 + 1$ \\
+    SCF & $n(n-1) + n(n-1)$ & $n^2 + 2n$ \\
+    MCF & $n(n-1) + n(n-1)^2$ & $n^3 - n^2 + 3n - 1$ \\
+    \hline
+\end{tabular}
+\end{center}
+
+\subsection{Optimality}
+
+Given a COP $\max\set{c(x)}[x \in X \subseteq \Z^{n}]$,
+
+\begin{cframe}{ColorThm}{}
+    A solution $x^{*}$ with $z^{*} = c(x^{*})$ is optimal if there is a lower bound $\underline{z}\leq z^{*}$ and an upper bound $\overline{z} > z^{*}$ such that $\underline{z} = z^{*} = \overline{z}$
+\end{cframe}
+
+This tells us that we can take an iterative approach to COPs: we try to find an increasing sequence of lower bounds and a decreasing sequence of upper bounds:
+$$ \underline{z_1} < \underline{z_2} < \dots \underline{z_l} \leq  z^{*} \leq \overline{z_{u}}  < \dots < \overline{z_2} < \overline{z_1}$$
+
+and we can stop whenever
+$$\overline{z_{u}} - \underline{z_{l}} \leq \epsilon (\geq 0)$$
+
+But we need to know how to obtain these bounds.
+
+We have seen that \textbf{primal bound} is the objective value $c(x)$ obtained by evaluating any valid, feasible solution $x \in X$ of the original (``primal'') problem; $x$ satisfies all constraints and integrality requirements, so it represents a feasible solution.
+
+We have that:
+\begin{itemize}
+    \item \textit{in a maximization problem:} since $z^*$ is the highest possible profit, any feasible solution $x \in X$ gives a \textbf{lower bound}:
+    $$ \underline{z} = c(x) \leq z^* $$
+    \item \textit{in a minimization problem:} since $z^*$ is the lowest possible cost, any feasible solution $x \in X$ gives an \textbf{upper bound}:
+    $$ \overline{z} = c(x) \geq z^* $$
+\end{itemize}
+
+Finding a provably optimal solution $x^*$ is NP-hard, but we use heuristics and meta-heuristics (general search strategies like Simulated Annealing or Tabu Search) to quickly generate feasible solutions $x \in X$ and obtain strong primal bounds. While heuristics alone cannotprove optimality (as they provide no opposite bound to close the optimality gap), a strong early primal bound can help solvers to immediately prune inferior parts of the search tree.
+
+On the other hand, we have also seen that a \textbf{dual bound} is a theoretical limit that no feasible solution can surpass. 
+
+In this case:
+\begin{itemize}
+    \item \textit{in a maximization problem:} since no feasible solution can exceed the true optimum $z^*$, a dual bound is an \textbf{upper bound} (a guaranteed ceiling):
+    $$ \overline{z} \geq z^* $$
+    \item \textit{in a minimization problem:} since no feasible solution can achieve a lower cost than $z^*$, a dual bound is a \textbf{lower bound} (a guaranteed floor):
+    $$ \underline{z} \leq z^* $$
+\end{itemize}
+
+In most cases, dual bounds are obtained by constructing and solving a \textbf{relaxation} of the original problem. Instead of solving the COP directly, we replace it with a simpler, polynomial-time solvable problem that enlarges the set of allowed solutions (for example, by dropping the integrality requirements ($x \in \Z^n$, yielding the LP relaxation) or by removing difficult constraints). 
+
+Because the relaxed problem has fewer restrictions and more freedom, its optimal value $z^R$ is guaranteed to be at least as favorable as $z^*$ (giving $\overline{z} = z^R \geq z^*$ in maximization).
+
+\subsection{Relaxations}
+
+\begin{defframe}{Relaxation}{}
+    A problem $RP \equiv z^R := \max \{ f(x) : x \in Y \subseteq \R^n \}$ is a \textbf{relaxation} of $COP \equiv z^* := \max \{ c(x) : x \in X \subseteq \R^n \}$ if:
+    \begin{enumerate}
+        \item $X \subseteq Y$ \quad \textcolor{gray}{(the relaxed feasible region enlarges the original set of allowed solutions)}
+        \item $f(x) \geq c(x), \quad \forall x \in X$ \quad \textcolor{gray}{(the relaxed objective never underestimates the original objective)}
+    \end{enumerate}
+\end{defframe}
+
+\begin{thmframe}{Relaxation Bound}{}
+If $RP$ is a relaxation of $COP$, then $z^* \leq z^R$.
+
+
+\textit{proof:} let $x^* \in X \subseteq Y$ be an optimal solution (maximizer) of $COP$; combining both conditions gives:
+$$ z^* = c(x^*) \leq f(x^*) \leq \max \{ f(x) : x \in Y \} = z^R. $$
+\end{thmframe}
+
+\begin{defframe}{LP Relaxation}{}
+    Given an $ILP \equiv z^* = \max \{ c^\top x : x \in P \cap \Z^n \}$ with formulation $P$, its \textbf{LP relaxation} is obtained by dropping the integrality requirement:
+    $$ LP \equiv z^{LP} = \max \{ c^\top x : x \in P \}. $$
+
+    \textcolor{gray}{Instead of restricting the solver to isolated whole-number grid points, we allow it to slide throughout the entire polyhedron $P$. Because $P \cap \Z^n \subseteq P$ and the objective function $c^\top x$ is unchanged, the LP relaxation is a valid relaxation and yields a polynomial-time dual (upper) bound $z^* \leq z^{LP}$.}
+\end{defframe}
+
+\begin{thmframe}{Tighter Formulations Give Tighter Dual Bounds}{}
+Let $P_1$ and $P_2$ be two formulations for the maximization problem $\max_{x \in X \subseteq \Z^n} c^\top x$ such that $P_1$ is tighter than $P_2$ ($P_1 \prec P_2$, i.e., $P_1 \subsetneq P_2$). 
+
+Defining $z_i^{LP} = \max \{ c^\top x : x \in P_i \}$ for $i \in \{1,2\}$, we have:
+$$ z^* \leq z_1^{LP} \leq z_2^{LP}. $$
+
+\textcolor{gray}{because $P_1$ sits inside $P_2$, every continuous point available in $P_1$ is also available in $P_2$: so maximizing over a smaller set cannot give us a higher value}
+\end{thmframe}
+
+\textbf{Example (1D):}
+
+Let $X = \{0,1\}$ and consider $\max x$ (so $z^* = 1$).
+\begin{itemize}
+    \item looser formulation $P_2 = \{ x \in \R : 0 \leq x \leq 1.8 \} \implies z_2^{LP} = 1.8$.
+    \item tighter formulation $P_1 = \{ x \in \R : 0 \leq x \leq 1.2 \} \implies z_1^{LP} = 1.2$.
+\end{itemize}
+Both capture $X = \{0,1\}$, and $z^* (1) \leq z_1^{LP} (1.2) \leq z_2^{LP} (1.8)$, and the tighter formulation $P_1$ produces a stronger upper bound.
+
+\begin{defframe}{Combinatorial Relaxation}{}
+    If a relaxation is a COP, we call it a \textbf{combinatorial relaxation}.
+\end{defframe}
+
+\subsection{Obtaining Dual Bounds via Duality}
+Besides relaxations, \textbf{LP duality} provides a second standard mechanism for deriving dual bounds.
+
+It is also better than relaxation, as any dual feasible solution $u$ provides a valid dual bound ($u^\top b$), whereas a primal relaxation needs to be solved all the way to optimality to provide a valid dual bound.
+
+\begin{thmframe}{Weak Duality for Integer Programs}{}
+Consider the primal Integer Linear Program ($ILP$) and its associated Dual Integer Linear Program ($DILP$), where integrality is also imposed on the dual variables:
+\begin{align*}
+    ILP &\equiv z^* = \max \{ c^\top x : Ax \leq b, \; x \in \Z_{\geq 0}^n \} \\
+    DILP &\equiv w^* = \min \{ u^\top b : A^\top u \geq c, \; u \in \Z_{\geq 0}^m \}
+\end{align*}
+Let $LP$ and $DLP$ denote their respective continuous linear programming relaxations (obtained by replacing $\Z_{\geq 0}$ with $\R_{\geq 0}$). 
+
+Then $ILP$ and $DILP$ form a \textbf{weak dual pair} ($z^* \leq w^*$), whereas \textbf{strong duality does not hold in general} ($z^* = w^*$ is not guaranteed).
+\end{thmframe}
+
+\textit{Proof:} 
+
+we can't link two integer programs directly, so we bridge them through their continuous LP relaxations:
+$$ z^* \;\leq\; z^{LP} \;=\; w^{DLP} \;\leq\; w^* $$
+\begin{enumerate}
+    \item $z^* \leq z^{LP}$: dropping integrality on $x$ enlarges the feasible region of a maximization problem, pushing the maximum up (or keeping it equal)
+    \item $z^{LP} = w^{DLP}$: since $LP$ and $DLP$ are both continuous linear programs, strong duality applies and their optimal values coincide
+    \item $w^{DLP} \leq w^*$: re-imposing integrality on $u$ restricts the feasible region of a minimization problem, pushing the minimum up (or keeping it equal)
+\end{enumerate}
+\textcolor{gray}{Because a gap can open at either integer relaxation step ($z^* < z^{LP}$ or $w^{DLP} < w^*$), both gaps compound in the same direction, and strong duality fails in the integer setting.}
+
+\textbf{example:} consider $ILP \equiv \max \{ 3x : 2x \leq 3, \; x \in \Z_{\geq 0} \}$.
+\begin{itemize}
+    \item $ILP$: only $x \in \{0,1\}$ are feasible $\implies x^* = 1$, $z^* = 3$
+    \item $LP$ relaxation ($x \geq 0$): optimal at $x = 1.5 \implies z^{LP} = 4.5$
+    \item $DLP$ ($\min \{ 3u : 2u \geq 3, \; u \geq 0 \}$): optimal at $u = 1.5 \implies w^{DLP} = 4.5$
+    \item $DILP$ ($u \in \Z_{\geq 0}$): smallest valid integer is $u^* = 2 \implies w^* = 6$.
+\end{itemize}
+ $z^*(3) < z^{LP}(4.5) = w^{DLP}(4.5) < w^*(6)$, weak duality holds ($3 \leq 6$) but not strong.
+
+
+\begin{thmframe}{Optimality by Duality}{}
+Let $ILP \equiv \max \{ c(x) : x \in X \}$ and $DILP \equiv \min \{ w(u) : u \in U \}$ be a weak dual pair 
+
+(meaning $c(x) \leq w(u)$ holds for all feasible $x \in X$ and $u \in U$)
+\begin{enumerate}
+    \item \textbf{(proving infeasibility)} 
+
+        when $DILP$ is unbounded from below ($w(u) \to -\infty$), $ILP$ must be infeasible ($X = \emptyset$).
+    
+        \textcolor{gray}{suppose by contradiction that $ILP$ had at least one feasible solution $\hat{x} \in X$ with some finite value $c(\hat{x}) \in \R$; by weak duality, $c(\hat{x}) \leq w(u)$ must hold for every $u \in U$; however, since $DILP$ is unbounded below, we can pick a feasible $u \in U$ with $w(u) < c(\hat{x})$, contradiction}
+
+    \item \textbf{(proving mutual optimality)}
+
+        if $x^* \in X$ and $u^* \in U$ are feasible solutions satisfying $c(x^*) = w(u^*)$, then $x^*$ is optimal for $ILP$ and $u^*$ is optimal for $DILP$.
+    
+    \textcolor{gray}{by weak duality, every feasible $x \in X$ satisfies $c(x) \leq w(u^*)$; substituting $w(u^*) = c(x^*)$ gives $c(x) \leq c(x^*)$ for all $x \in X$, so $x^*$ is a global maximizer of $ILP$; symmetrically, every feasible $u \in U$ satisfies $w(u) \geq c(x^*) = w(u^*)$, and $u^*$ is a global minimizer of $DILP$; the primal lower bound $c(x^*)$ and dual upper bound $w(u^*)$ collide, closing the optimality gap}
+\end{enumerate}
+\end{thmframe}
+
+\subsection{Branch-and-Bound}
+
+\subsubsection{Divide and Conquer}
+Given a maximization problem $ILP \equiv z := \max \{ c^\top x : x \in S \}$, the \textbf{divide-and-conquer} strategy breaks the feasible region $S$ into smaller, easier subproblems, solves each subproblem, and combines the results:
+
+\begin{thmframe}{Decomposition}{}
+ Let $S = S_1 \cup S_2 \cup \dots \cup S_K$ be a decomposition of $S$ into smaller subsets, and let $z^k := \max \{ c^\top x : x \in S_k \}$ for $k = 1, \dots, K$. Then:
+$$ z = \max \{ z^k : k = 1, \dots, K \}. $$
+\end{thmframe}
+
+Complete enumeration (splitting $S$ all the way down to individual integer points) is computationally intractable even for small instances. 
+
+\textbf{Implicit enumeration} avoids exploring every branch by using lower and upper bounds to discard entire subtrees at once.
+
+\begin{thmframe}{Aggregating Bounds}{}
+Let $S = S_1 \dot{\cup} \dots \dot{\cup} S_K$ be a decomposition of $S$ into disjoint subsets, with $z^k := \max \{ c^\top x : x \in S_k \}$. 
+
+If $\underline{z}^k$ and $\overline{z}^k$ are valid lower and upper bounds on $z^k$ for each $k = 1, \dots, K$, then:
+$$ \max_k \underline{z}^k \;=:\; \underline{z} \;\leq\; z \;\leq\; \overline{z} \;:=\; \max_k \overline{z}^k. $$
+\textcolor{gray}{for the global lower bound $\underline{z}$, we keep the best valid integer solution discovered across any branch; for the global upper bound $\overline{z}$, the optimum could still lie in any unexplored branch, so the overall ceiling must equal the largest (most optimistic) regional ceiling}
+\end{thmframe}
+
+\textbf{Pruning Rules (in maximization)}\\
+During enumeration, each subproblem node $S_t$ tracks its upper bound $\overline{z}^t$ and lower bound $\underline{z}^t$ (with $\underline{z}^t = -\infty$ if no feasible integer point has been found in $S_t$ yet). 
+
+A branch $S_t$ can be \textbf{pruned} (discarded without further splitting) in three cases:
+\begin{enumerate}
+    \item \textbf{prune by optimality:} if $\underline{z}^t = \overline{z}^t$, then $z^t = \max \{ c^\top x : x \in S_t \}$ is solved completely; no further branching inside $S_t$ can improve its value, so $S_t$ is pruned (and global $\underline{z}$ is updated if $z^t > \underline{z}$)
+    
+\begin{center}
+\begin{tikzpicture}[
+    node/.style={circle, draw, fill=blue!15, inner sep=0.5pt, minimum size=13pt, font=\scriptsize},
+    bnd/.style={font=\tiny, align=left, inner sep=1.5pt}
+]
+    \node[node, label={[bnd]right:{27\\13}}] (S) at (0,0) {$S$};
+    \node[node, label={[bnd]right:{20\\20}}] (S1) at (-0.55,-0.85) {$S_1$};
+    \node[node, label={[bnd]right:{25\\15}}] (S2) at (0.55,-0.85) {$S_2$};
+    \draw (S) -- (S1);
+    \draw (S) -- (S2);
+
+    \draw[->, thick] (1.15,-0.42) -- (1.65,-0.42);
+
+    \node[node, label={[bnd]right:{25\\20}}] (Sa) at (2.45,0) {$S$};
+    \node[node] (S1a) at (1.90,-0.85) {$S_1$};
+    \node[node, label={[bnd]right:{25\\15}}] (S2a) at (3.00,-0.85) {$S_2$};
+    \draw (Sa) -- (S1a);
+    \draw (Sa) -- (S2a);
+    \draw[thick] (2.05,-0.35) -- (2.30,-0.50); % prune slash
+\end{tikzpicture}
+\end{center}
+
+    \item \textbf{prune by bound:} if $\overline{z}^t \leq \underline{z}$, the best theoretically possible value inside $S_t$ cannot beat a valid feasible solution already known in another branch; hence, no global optimum can lie in $S_t$, and $S_t$ is pruned 
+\begin{center}
+\begin{tikzpicture}[
+    node/.style={circle, draw, fill=blue!15, inner sep=0.5pt, minimum size=13pt, font=\scriptsize},
+    bnd/.style={font=\tiny, align=left, inner sep=1.5pt}
+]
+    \node[node, label={[bnd]right:{27\\13}}] (S) at (0,0) {$S$};
+    \node[node, label={[bnd]right:{20\\18}}] (S1) at (-0.55,-0.85) {$S_1$};
+    \node[node, label={[bnd]right:{26\\21}}] (S2) at (0.55,-0.85) {$S_2$};
+    \draw (S) -- (S1);
+    \draw (S) -- (S2);
+
+    \draw[->, thick] (1.15,-0.42) -- (1.65,-0.42);
+
+    \node[node, label={[bnd]right:{26\\21}}] (Sa) at (2.45,0) {$S$};
+    \node[node] (S1a) at (1.90,-0.85) {$S_1$};
+    \node[node, label={[bnd]right:{26\\21}}] (S2a) at (3.00,-0.85) {$S_2$};
+    \draw (Sa) -- (S1a);
+    \draw (Sa) -- (S2a);
+    \draw[thick] (2.05,-0.35) -- (2.30,-0.50); 
+\end{tikzpicture}
+\end{center}
+
+\subitem \textcolor{gray}{the solver has already found a solution worth $21$ in $S_{2}$, and branch $S_{1}$ has $20$ as its upper bound, so it can be cut}
+
+    \item \textbf{prune by infeasibility:} if $S_t = \emptyset$, subproblem $z^t$ has no feasible solutions, so $S_t$ is pruned immediately
+\begin{center}
+\begin{tikzpicture}[
+    node/.style={circle, draw, fill=blue!15, inner sep=0.5pt, minimum size=13pt, font=\scriptsize},
+    bnd/.style={font=\tiny, align=left, inner sep=1.5pt}
+]
+    \node[node, label={[bnd]right:{27\\13}}] (S) at (0,0) {$S$};
+    \node[node, label={[font=\scriptsize, inner sep=1.5pt]right:{$= \emptyset$}}] (S1) at (-0.55,-0.85) {$S_1$};
+    \node[node, label={[bnd]right:{26\\21}}] (S2) at (0.55,-0.85) {$S_2$};
+    \draw (S) -- (S1);
+    \draw (S) -- (S2);
+
+    \draw[->, thick] (1.15,-0.42) -- (1.65,-0.42);
+
+    \node[node, label={[bnd]right:{26\\21}}] (Sa) at (2.45,0) {$S$};
+    \node[node] (S1a) at (1.90,-0.85) {$S_1$};
+    \node[node, label={[bnd]right:{26\\21}}] (S2a) at (3.00,-0.85) {$S_2$};
+    \draw (Sa) -- (S1a);
+    \draw (Sa) -- (S2a);
+    \draw[thick] (2.05,-0.35) -- (2.30,-0.50);
+\end{tikzpicture}
+\end{center}
+
+\end{enumerate}
+\textcolor{gray}{if none of these three conditions hold for a subproblem $S_t$ (i.e., $S_t \neq \emptyset$ and $\underline{z}^t < \overline{z}^t$ with $\overline{z}^t > \underline{z}$), no pruning is possible and $S_t$ must be decomposed further}
+
+\subsubsection{LP-Based Branch-and-Bound}
+LP-based Branch-and-Bound is the standard method for solving (M)ILPs. 
+
+It uses \textbf{LP relaxation} to compute dual bounds (upper bounds in maximization) and resolves fractional variables by recursively splitting the feasible region.
+
+The algorithm does \textbf{binary branching on fractional variables}.
+
+Suppose we solve the LP relaxation of subproblem $S$ and obtain optimal value $\overline{z}$ and maximizer $x^{LP}$. If $x^{LP}$ still violates integrality, pick a variable $x_j$ with domain $\Z$ whose LP value $\overline{x}_j = x_j^{LP} \notin \Z$, and split $S$ into:
+$$ S_1 = S \cap \{ x : x_j \leq \lfloor \overline{x}_j \rfloor \} \quad \text{and} \quad S_2 = S \cap \{ x : x_j \geq \lceil \overline{x}_j \rceil \}. $$
+\begin{itemize}
+    \item $S_1 \cup S_2 = S$ and $S_1 \cap S_2 = \emptyset$ \textcolor{gray}{(because no integer lies between $\lfloor \overline{x}_j \rfloor$ and $\lceil \overline{x}_j \rceil$, the two subproblems partition $S$ cleanly without losing any valid integer solutions)}
+    \item $x^{LP} \notin LP(S_1)$ and $x^{LP} \notin LP(S_2)$ \textcolor{gray}{(branching carves out an open gap $(\lfloor \overline{x}_j \rfloor, \lceil \overline{x}_j \rceil)$ that slices off the fractional corner $x^{LP}$ from both child relaxations)}
+    \item $\max\{\overline{z}^1, \overline{z}^2\} \leq \overline{z}$ \textcolor{gray}{(adding branching constraints shrinks the relaxation polyhedra, so dual upper bounds monotonically decrease or stagnate down the tree)}
+\end{itemize}
+If an LP relaxation happens to yield a point $x^{t,LP} \in S$ that is already feasible for the original problem, we update the \textbf{incumbent} (best feasible integer solution found so far) and primal bound $\underline{z} = \max\{\underline{z}, z^t\}$, and prune $S_t$ by optimality.
+\begin{pseudocode}
+procedure LPBasedBranchAndBound($ILP$)
+    list of linear programs $\mathcal{L} \gets [LP_{\text{initial\_relaxation}}]$ // relaxed input ILP
+    $\underline{z} \gets -\infty$, incumbent $x^* \gets \text{NULL}$
+    while $\mathcal{L} \neq \emptyset$ do
+        choose a program $LP_i$ from $\mathcal{L}$ and remove it from $\mathcal{L}$
+        solve: $\overline{z}^i \gets \text{maximum\_value}(LP_i)$, $x^{i,LP} \gets \text{maximizer}(LP_i)$
+        if $LP_i$ infeasible then
+            prune it by infeasibility
+        else if $\overline{z}^i \leq \underline{z}$ then
+            prune $LP_i$ by bound
+        else if $x^{i,LP}$ even feasible for non-relaxed variant of $LP_i$ then // $\overline{z}^i = \underline{z}^i = z^i$
+            if $z^i \geq \underline{z}$ then
+                update primal bound $\underline{z} \gets z^i$
+                update incumbent $x^* \gets x^{i,LP}$
+            end if
+            prune $LP_i$ by optimality
+        else
+            $\mathcal{L} \gets \mathcal{L} \cup \{LP_{i,1}, LP_{i,2}\}$ // disjunct formulations covering feasible region of $LP_i$
+        end if
+    end while
+    return $x^*, \underline{z}$
+end procedure
+\end{pseudocode}
+
+\textcolor{gray}{the same algorithm solves MILPs by allowing continuous variables to take fractional values in $x^{i,LP}$ and branching only on variables required to be integer}
+
+\subsubsection{Branching Variable and Node Selection Strategies}
+\begin{enumerate}
+    \item \textit{how to choose a branching variable} (from the set $C$ of integer variables currently fractional in $x^{LP}$):
+    \begin{itemize}
+        \item \textbf{random:} pick any $x_j \in C$ arbitrarily.
+        \item \textbf{most-fractional:} prioritize variables whose values are closest to $0.5 + \Z$ (``most undecided'' between floor and ceiling).
+        \item \textbf{strong branching:} spend extra computation per node to look ahead; for each candidate $x_j \in C$, temporarily solve both its upper-branch ($U$) and lower-branch ($D$) LP relaxations to obtain dual bounds $z_j^U$ and $z_j^D$, then pick the variable causing the sharpest worst-case drop in the upper bound:
+        $$ x_i = \arg\min_{x_j \in C} \max \{ z_j^U, z_j^D \}. $$
+    \end{itemize}
+
+    \item \textit{how to choose the next subproblem from $\mathcal{L}$:}
+    \begin{itemize}
+        \item \textbf{random choice:} select an arbitrary open node from $\mathcal{L}$.
+        \item \textbf{DFS:} dive into the tree first to quickly find feasible integer solutions and establish a strong primal bound $\underline{z}$ (enabling prune-by-bound early); furthermore, each child LP adds just a single variable bound to its parent, making Simplex warm-starts very fast
+        \item \textbf{best-node-first:} select the subproblem $i$ with the largest upper bound $\overline{z}^i = \max_t \overline{z}^t$; because $LP_i$ has the highest ceiling, it cannot be pruned by bound anyway (barring ties), and solving it directly lowers the global dual bound $\overline{z}$
+    \end{itemize}
+\end{enumerate}
 
 
 
