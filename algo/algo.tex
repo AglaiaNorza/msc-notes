@@ -1235,7 +1235,15 @@ If we compare the results with the actual probabilities:
 \end{itemize}
 
 Chernoff bounds overestimate the true error probability significantly, but they are widely used because they are simple to compute and guarantee exponential decay wrt $n$.
-\section{Key Takeaways}
+\section{Takeaways / Cheat Sheet}
+
+\begin{cframe}{ColorDef}{Sample-Space Expectation}{}
+    \begin{itemize}
+        \item \textbf{ungrouped vs.\ grouped expectation:}
+            $$E[X] = \sum_{s \in \Omega} p(s) \cdot X(s) = \sum_{j=0}^\infty j \cdot Pr[X = j]$$
+            (where $s \in \Omega$ is an outcome in the sample space and $X(s)$ is its numerical score).
+    \end{itemize}
+\end{cframe}
 
 \begin{cframe}{ColorThm}{The Probabilistic Method}
 Non-constructive proof technique used to prove the \textbf{existence of a specific solution or structure}. It can be done:
@@ -1245,11 +1253,12 @@ Non-constructive proof technique used to prove the \textbf{existence of a specif
 \end{itemize}
 \end{cframe}
 
-\begin{cframe}{ColorLemma}{Converting Monte Carlo to Las Vegas}
-A Monte Carlo algorithm (fast, but potentially returns an incorrect output) can be upgraded into a Las Vegas algorithm (always correct, but with an expected, non-guaranteed runtime) if and only if you can efficiently verify the correctness of the output:
-\begin{itemize}
-    \item wrap the Monte Carlo algorithm in a loop that repeats until the verification step succeeds
-\end{itemize}
+\begin{cframe}{ColorLemma}{Converting Las Vegas to Monte Carlo}
+    A Las Vegas algorithm (always correct, expected runtime $E[T]$) can be turned into a Monte Carlo algorithm (bounded runtime) by imposing a step budget $M$:
+    \begin{itemize}
+        \item abort if the algorithm has not terminated after $M$ steps and output a default fallback value
+        \item by Markov's inequality, the failure probability is bounded by $Pr[T \ge M] \le \frac{E[T]}{M}$
+    \end{itemize}
 \end{cframe}
 
 \begin{cframe}{ColorDef}{Analyzing Algorithm Probability}{}
@@ -1263,6 +1272,45 @@ To analyze the expected runtime or an expected score of a randomized algorithm:
     \end{enumerate}
     \end{cframe}
 
+    \begin{cframe}{ColorDef}{Waiting-Time Convention ($X = k$)}{}
+    For independent trials with success probability $p$:
+    \begin{itemize}
+        \item \textbf{total trials including the success ($k \ge 1$):} $k - 1$ failures followed by $1$ success on trial $k$:
+            $$Pr[X = k] = (1-p)^{k-1} p \quad \text{with} \quad E[X] = \frac{1}{p}$$
+        \item \textbf{failures before the success ($k \ge 0$):}
+            $$Pr[Y = k] = (1-p)^k p \quad \text{with} \quad E[Y] = \frac{1-p}{p} = \frac{1}{p} - 1$$
+    \end{itemize}
+\end{cframe}
+
+\begin{cframe}{ColorThm}{Two Ways to Prove Output Probabilities}
+    Suppose a loop repeats independent, identical rounds until a valid output is produced. In a single round, let:
+    \begin{itemize}
+        \item $p_{\text{target}}$: probability of landing on a \textbf{specific target value} (e.g., $(H,T)$ for bit $1$)
+        \item $p_{\text{valid}}$: probability of landing on \textbf{any valid output} that stops the loop
+        \item $p_{\text{retry}} = 1 - p_{\text{valid}}$: probability of discarding and restarting
+    \end{itemize}
+    Both methods yield the exact same probability:
+    \begin{enumerate}
+        \item \textbf{infinite geometric series}:
+            $$Pr[\text{output target}] = \sum_{k=1}^\infty (p_{\text{retry}})^{k-1} p_{\text{target}} = \frac{p_{\text{target}}}{1 - p_{\text{retry}}}$$
+        \item \textbf{conditional probability}: 
+            $$Pr[\text{target} \mid \text{valid}] = \frac{Pr[\text{target} \cap \text{valid}]}{Pr[\text{valid}]} = \frac{p_{\text{target}}}{p_{\text{valid}}}$$
+            (since $\text{target} \subseteq \text{valid}$, their intersection is just $\text{target}$).
+    \end{enumerate}
+
+    If i am asked to prove the likelihood of "stopping at trial $k$", i take one term of the geometric series:
+    $$ P(X = k) = (p_{\text{retry}})^{k} p_{\text{valid}} $$
+\end{cframe}
+
+\begin{cframe}{ColorDef}{Expected Flips Recurrence}{}
+    If a single round performs $c$ coin flips and restarts with probability $p_{\text{retry}} = 1 - p_{\text{valid}}$:
+    $$E[\text{flips}] = c + p_{\text{retry}} \cdot E[\text{flips}] \implies E[\text{flips}] = \frac{c}{1 - p_{\text{retry}}} = \frac{c}{p_{\text{valid}}}$$
+    To generate $n$ independent outputs, multiply by $n$ via linearity of expectation.
+\end{cframe}
+
+
+\subsection*{Tail Inequalities}
+
 \begin{cframe}{ColorThm}{Choosing a Tail Inequality}
 Tail inequalities quantify concentration by bounding the probability that a random variable deviates far from its mean. We can choose the bound based on what information is available:
 \begin{itemize}
@@ -1275,22 +1323,31 @@ Tail inequalities quantify concentration by bounding the probability that a rand
 \end{itemize}
 \end{cframe}
 
-\begin{cframe}{ColorDef}{Summary of Tail Inequalities}{}
-    \vspace{-1em}
-\begin{enumerate}
-    \item \textbf{Markov:} $Pr[X \ge k \cdot E[X]] \le \frac{1}{k}$
-        \subitem \textit{assumptions:} $X \ge 0$, $k > 0$.
-    \item \textbf{Chebyshev:} $Pr[|X - E[X]| \ge t \cdot \sigma[X]] \le \frac{1}{t^2}$
-        \subitem \textit{assumptions:} Known variance $\sigma^2[X]$.
-    \item \textbf{Chernoff (Above Mean):} $Pr[X > (1+\delta)\mu] < \left( \frac{e^\delta}{(1+\delta)^{1+\delta}} \right)^\mu$
-        \subitem \textit{assumptions:} $X = \sum_{i=1}^n X_i$ with independent $X_i \in \{0, 1\}$ and $\mu \ge E[X]$.
-    \item \textbf{Chernoff (Below Mean):} $Pr[X < (1-\delta)\mu] < e^{-\delta^2 \mu / 2}$
-        \subitem \textit{Assumptions:} Same as above, with $0 < \delta < 1$.
-\end{enumerate}
-\end{cframe}
+\subsection*{Some Exam Problems}
 
-\chapter{MILP}
+\begin{gframe}{biased coin to unbiased bits}
+    Given a coin with unknown $Pr[H] = p \in (\frac{1}{2}, 1)$, flip pairs $(b_1, b_2)$: output $1$ on $(H,T)$, output $0$ on $(T,H)$, and retry on $(H,H)$ or $(T,T)$.
+    \begin{itemize}
+        \item \textbf{correctness:} $p_{\text{target}} = p(1-p)$ and $p_{\text{valid}} = 2p(1-p) > 0$, so:
+            $$Pr[\text{bit} = 1 \mid \text{valid}] = \frac{p(1-p)}{2p(1-p)} = \frac{1}{2}$$
+        \item \textbf{expected flips:} each round uses $c = 2$ flips, so $E_1 = \frac{2}{2p(1-p)} = \frac{1}{p(1-p)}$ per bit, and $E[\text{flips}] = \frac{n}{p(1-p)}$ for $n$ bits (expectation from geometric distribution).
+        \item \textbf{class:} Las Vegas (always unbiased, expected runtime).
+    \end{itemize}
+\end{gframe}
 
+
+\begin{gframe}{Randomized Counting (Bag of $n$ Balls)}
+    initial step (step $0$) that draws $1$ ball, marks it, and returns it.
+    \begin{itemize}
+        \item \textbf{mark only the initial ball:} $Pr[\text{re-select at step } k] = \left(1 - \frac{1}{n}\right)^{k-1} \frac{1}{n}$, $E[X] = n$, estimator $\hat{n} = k$.
+        \item \textbf{mark every drawn ball:} because the bag's state changes on every draw, conditional probability does \textit{not} apply. Before step $k$, $k$ distinct balls are marked ($1$ initial + $k-1$ previous misses):
+            $$Pr[\text{first collision at step } k] = \left(\prod_{i=1}^{k-1} \frac{n - i}{n}\right) \cdot \frac{k}{n} \quad $$
+    \end{itemize}
+\end{gframe}
+
+
+
+\chapter{(Mixed Integer) Linear Programming}
 \section{Linear Programming}
 The objective of linear programming is to maximise (/minimise) a linear function in presence of linear (in)equality constraints.
 
@@ -2210,7 +2267,7 @@ Here, our decision variables can only take \textit{binary} values.
   \max \quad & c^\top x \\
   \text{subject to} \quad & Ax \le b \\
   & 0 \leq x \leq 1\\
-  & x \in \Z^{n} 0
+  & x \in \set{0,1}^{n}
 \end{align*}
 
 \begin{tabular}{r c l}
@@ -2477,7 +2534,9 @@ To compare them on equal footing, we first have to project $P_2$ down into the $
     $$ \text{proj}_x P_2 = \{ x \in \R^n : (x,y) \in P_2 \text{ for some } y \in \R^p \} $$
 \end{defframe}
 
+\begin{defframe}{Tighter Formulation}{}
 We classify $P_2$ as tighter than $P_1$ if $\text{proj}_{x} P_2 \subsetneq P_1$
+\end{defframe}
 
 \begin{gframe}{Example: 2D to 3D}
 Let $X = \{0,1\} \subseteq \Z^1$.
@@ -2919,8 +2978,111 @@ end procedure
     \end{itemize}
 \end{enumerate}
 
+\section*{MILP cheat-sheet}
+
+\subsection*{some basic boolean values}
+It is useful to know how to represent boolean constraints on (boolean) variables.
+
+\begin{gframe}{boolean constraints}
+\begin{itemize}
+    \item NOT constraint (the most simple, works like in logic): $\neg z = (1- z)$
+    \item OR constraint we introduce $z = x \lor y$, and
+        \begin{itemize}
+            \item we know that an OR is a $+$ !!, so 
+            $$z \leq x + y$$
+            \item but we can't just allow it to be $0$ unless they both are $0$, so: $z \geq x$, $z \geq y$
+        \end{itemize}
+
+    \item AND constraint - we introduce $z = x \land y$, and
+        \begin{itemize}
+\item we know that an AND is $\neg(\neg x \lor \neg y)$
+\item applying the OR upper bound ($\neg x \lor \neg y \leq (1-x) + (1-y)$) and negating both sides flips the inequality:
+    $$z \geq 1 - \big((1-x) + (1-y)\big) = 1 - (2 - x - y) = x + y - 1$$
+    $$z \geq x + y - 1$$
+\item we also need $z \leq x$, $z \leq y$ to bound it from above
+        \end{itemize}
+            \item implication: like in logic, since $\to $ is $\subseteq $, here we have $x \to y \equiv x \leq y$ 
+\end{itemize}
+\end{gframe}
 
 
+
+\subsection*{big-M}
+The big-M method is used to turn on and off constraints. It works like this 
+\begin{itemize}
+    \item select a very big "boundary" value that you know a variable will not reach (e.g., if considering number of vertices, the size of the graph + 1
+    \item create a new "activation" variable $z$ s.t.
+        \begin{itemize}
+            \item when $z = 1$, the constraint will be active
+            \item when $z = 0$, the constraint will be inactive
+        \end{itemize}
+    \item write the constraint (say, $ax \leq  b$) as:
+        $$ a x \leq b + (1-z)M $$
+        \begin{itemize}
+            \item if $z = 0$, $(1-z) = 1$ and the big-M will be active: $ax \leq b + M$ will never be reachable
+            \item if $z = 1$, $(1-z) = 0$ and the constraint is $ax \leq b$
+        \end{itemize}
+
+\end{itemize}
+
+This concept can be extended to \textit{two (or more) constraints}.
+
+Say that we want $ax \leq b_1$ when $z = 1$ and $ax \leq  b_2$ when $z = 0$. We can write
+$$ ax \leq b_1 (1-z)M \quad \text{ as before}$$
+$$ ax \leq b_1 (z)M \quad \text{ other case!}$$
+
+If we want $k \geq 2$ OR constraint, we introduce $z_1, \dots z_{k}$, and make it so:
+
+$$ ax \leq b_1 +(1-z_1)M $$
+$$ ax \leq b_2+ (1-z_2)M $$
+$$  \dots  $$
+$$ ax \leq b_k +(1-z_{k})M $$
+
+AND!! we add
+$$ \sum_{i \leq k} z_{i} \geq 1 \quad \text{ if we want an inclusive OR} $$
+$$ \sum_{i \leq k} z_{i} = 1 \quad \text{ if we want an exclusive OR} $$
+
+If we need big-M to model a variable $x$ being in $[a,b]$ in one case ($z=1$), and in $[c, d]$ in another ($z=0$), we just apply the big-M rule to the upper and lower bounds separately!
+\begin{itemize}
+    \item when $z=1$
+        $$ x \geq a +(1-z)M$$
+        $$ x \leq b +(1-z)M$$
+    \item when $z=0$
+        $$ x \geq c+ (zM) $$
+        $$ x \leq d +(zM) $$
+\end{itemize}
+
+a more specific case of this is "$x$ is either $0$ or in $[l, u]$" - here, we don't even need the big-M formulation!
+
+we can just write:
+$$ l \cdot z \leq x \leq u \cdot z $$
+
+\subsection*{product}
+Another useful operation is multiplication. We can't explicitly multiply decision variables, but we can simulate products!
+
+If we have $w = z \cdot x$, with $x \in [0, U]$, $z \in \set{0,1}$, we can check the two upper bounds and the two lower bounds, and "trap" the variable
+
+we can go by upper and lower bounds:
+\begin{itemize}
+    \item upper bounds
+        \begin{itemize}
+            \item when $z=0$, we want $w \leq 0$
+        $$  w \leq U z $$
+    \item when $z = 1$, we want $w \leq x$
+        $$ w \leq x \quad \textcolor{gray}{w \leq U \text{ would be too loose}} $$
+    \subitem \textcolor{gray}{here, we could also use the big-M $w \leq x + U(1-z)$, but it would just weaken the LP relaxation}
+        \end{itemize}
+    \item lower bounds:
+        \begin{itemize}
+            \item when $z = 0$, we want $w \geq 0$
+                $$ w \geq 0 $$
+    \subitem \textcolor{gray}{here, we could also use the big-M $w \geq -U z$, but it would just weaken the LP relaxation}
+            \item when $z = 1$, we want $w \geq x$
+                $$ w \geq x - U (1-z) \quad \textcolor {gray}{\text{we can't just write } w \geq x \text{ or the } z =0 \text{ case would break}}$$
+        \end{itemize}
+\end{itemize}
+
+ 
 \end{document}
 
 
