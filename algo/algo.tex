@@ -2579,6 +2579,7 @@ This formulation models this as a MILP as follows:
         \sum_{j \in N, \, j \neq i} x_{ij} &= 1 && \forall i \in N \tag{1: leave each city once} \\
         \sum_{i \in N, \, i \neq j} x_{ij} &= 1 && \forall j \in N \tag{2: arrive at each city once} \\
         u_i + x_{ij} &\leq u_j + M(1 - x_{ij}) && \forall i,j \in N \setminus \set{1}, \; i \neq j \tag{3: ordering / Big-$M$} \\
+        \color{gray} \text{this is the same as } \ u_i + 1 & \color{gray}\leq u_j + M(1 - x_{ij}) \\
         1 \leq u_i &\leq n - 1 && \forall i \in N \setminus \set{1} \tag{4: timestamp bounds}
     \end{align*}
     where $M := n - 2$ is chosen large enough to deactivate constraint (3) whenever $x_{ij} = 0$.
@@ -2592,7 +2593,7 @@ Constraints (1) and (2) alone only guarantee that every city has \textit{out-deg
 Constraints (3) and (4) eliminate subtours, by acting like "timestamps": $u_i$ records when each "intermediate" city is visited (from step $1$ up to step $n-1$):
 \begin{itemize}
     \item if edge $(i,j)$ is not used ($x_{ij} = 0$), constraint (3) becomes $u_i \leq u_j + (n-2)$; since $u_i \leq n-1$ and $u_j \geq 1$, this inequality holds automatically and restricts nothing
-    \item if edge $(i,j)$ is used ($x_{ij} = 1$), the Big-$M$ term becomes $0$ and constraint (3) simplifies to $u_i + 1 \leq u_j$, forcing the timestamp to increase by at least $1$ along every traveled edge
+    \item if edge $(i,j)$ is used ($x_{ij} = 1$), the Big-$M$ term becomes $0$ and constraint (3) simplifies to $u_i + 1 \leq u_j$, and the timestamp has to increase by at least $1$ at every traveled edge
 \end{itemize}
 
 Suppose a solution contained two or more subtours.
@@ -2639,7 +2640,7 @@ We keep the binary edge variables $x_{ij} \in \set{0,1}$ ($i \neq j$), the objec
     \item \textit{additional variables:} $f_{ij}^k \in \R$ for all $i,j \in N$ ($i \neq j$) and all $k \in N \setminus \set{1}$, representing the continuous flow of commodity $k$ along edge $(i,j)$.
     \item \textit{additional constraints:}
     \begin{align*}
-        \sum_{j \in N, \, j \neq 1} f_{1j}^k &= 1 && \forall k \in N \setminus \set{1} \tag{8: depot sends $1$ unit of $k$} \\
+        \sum_{j \in N, \, j \neq 1} f_{1j}^k &= 1 && \forall k \in N \setminus \set{1} \tag{8: depot sends $1$ unit of each $k$} \\
         \sum_{i \in N, \, i \neq k} f_{ik}^k &= 1 \quad \text{and} \quad \sum_{j \in N, \, j \neq k} f_{kj}^k = 0 && \forall k \in N \setminus \set{1} \tag{9: sink $k$ absorbs $k$} \\
         \sum_{i \in N, \, i \neq j} f_{ij}^k - \sum_{i \in N, \, i \neq j} f_{ji}^k &= 0 && \forall j, k \in N \setminus \set{1}, \; j \neq k \tag{10: transit conservation} \\
         0 \leq f_{ij}^k &\leq x_{ij} && \forall i,j \in N, \; i \neq j, \; \forall k \in N \setminus \set{1} \tag{11: individual edge gate}
