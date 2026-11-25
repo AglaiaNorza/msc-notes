@@ -11,6 +11,9 @@
 \usepackage{csquotes}
 \MakeOuterQuote{"}
 
+\usepackage{booktabs, array, tabularx}
+\usepackage[table]{xcolor}
+
 \NewDocumentCommand{\set}{m o}{%
   \IfValueTF{#2}
     {\left\{ #1 \;\middle|\; #2 \right\}}
@@ -2979,9 +2982,11 @@ end procedure
     \end{itemize}
 \end{enumerate}
 
-\section*{MILP cheat-sheet}
+\section{Takeaways / Cheat-Sheet}
 
-\subsection*{some basic boolean values}
+\subsection{Modeling}
+
+\subsubsection*{some basic boolean values}
 It is useful to know how to represent boolean constraints on (boolean) variables.
 
 \begin{gframe}{boolean constraints}
@@ -3006,9 +3011,7 @@ It is useful to know how to represent boolean constraints on (boolean) variables
 \end{itemize}
 \end{gframe}
 
-
-
-\subsection*{big-M}
+\subsubsection*{big-M}
 The big-M method is used to turn on and off constraints. It works like this 
 \begin{itemize}
     \item select a very big "boundary" value that you know a variable will not reach (e.g., if considering number of vertices, the size of the graph + 1
@@ -3058,7 +3061,7 @@ a more specific case of this is "$x$ is either $0$ or in $[l, u]$" - here, we do
 we can just write:
 $$ l \cdot z \leq x \leq u \cdot z $$
 
-\subsection*{product}
+\subsubsection*{product}
 Another useful operation is multiplication. We can't explicitly multiply decision variables, but we can simulate products!
 
 If we have $w = z \cdot x$, with $x \in [0, U]$, $z \in \set{0,1}$, we can check the two upper bounds and the two lower bounds, and "trap" the variable
@@ -3083,6 +3086,178 @@ we can go by upper and lower bounds:
         \end{itemize}
 \end{itemize}
 
+\subsection{Dual Problem}
+For a MILP, we first take its \textbf{LP relaxation} (relax integer variables to continuous).
+
+\medskip
+\noindent given a primal problem:
+
+\noindent\fcolorbox{gray!35}{gray!6}{%
+\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{%
+\[
+\begin{aligned}
+\max \quad & \colorbox{blue!10}{$c_1$} x_1 + \colorbox{orange!12}{$c_2$} x_2 + \colorbox{teal!10}{$c_3$} x_3 \\[4pt]
+\text{s.t.} \quad 
+& \colorbox{blue!10}{$a_{11}$} x_1 + \colorbox{orange!12}{$a_{12}$} x_2 + \colorbox{teal!10}{$a_{13}$} x_3 \le b_1 \qquad {\color{gray}\leftarrow y_1} \\
+& \colorbox{blue!10}{$a_{21}$} x_1 + \colorbox{orange!12}{$a_{22}$} x_2 + \colorbox{teal!10}{$a_{23}$} x_3 \ge b_2 \qquad {\color{gray}\leftarrow y_2} \\
+& \colorbox{blue!10}{$a_{31}$} x_1 + \colorbox{orange!12}{$a_{32}$} x_2 + \colorbox{teal!10}{$a_{33}$} x_3 = b_3 \qquad {\color{gray}\leftarrow y_3} \\[4pt]
+& x_1 \ge 0, \quad x_2 \le 0, \quad x_3 \text{ free}
+\end{aligned}
+\]
+}}
+
+\begin{enumerate}
+    \item \textbf{flip the objective:} switch $\max \leftrightarrow \min$, and use the primal right-hand sides ($b_1, b_2, b_3$) as the new objective coefficients:
+
+    \smallskip
+    \noindent\fcolorbox{gray!25}{gray!4}{%
+    \parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{%
+    \[
+    \begin{aligned}
+    \min \quad & b_1 y_1 + b_2 y_2 + b_3 y_3 \\
+    \text{s.t.} \quad & {\color{gray}\dots}
+    \end{aligned}
+    \]
+    }}
+
+    \item \textbf{one constraint per primal variable:} create a new dual constraint for each primal variable ($x_1, x_2, x_3$), and put that variable's objective coefficient ($c_1, c_2, c_3$) on the right-hand side:
+
+    \smallskip
+    \noindent\fcolorbox{gray!25}{gray!4}{%
+    \parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{%
+    \[
+    \begin{aligned}
+    \min \quad & b_1 y_1 + b_2 y_2 + b_3 y_3 \\[3pt]
+    \text{s.t.} \quad 
+    & {\color{gray}[\;\cdots\;]} \;\; {\color{gray}?} \;\; \colorbox{blue!10}{$c_1$} \\
+    & {\color{gray}[\;\cdots\;]} \;\; {\color{gray}?} \;\; \colorbox{orange!12}{$c_2$} \\
+    & {\color{gray}[\;\cdots\;]} \;\; {\color{gray}?} \;\; \colorbox{teal!10}{$c_3$}
+    \end{aligned}
+    \]
+    }}
+
+    \item \textbf{dual constraint signs via SOB (check primal variables):} look at the sign of each primal variable ($x_j$) and follow \textbf{SOB} (\textbf{s}ensible, \textbf{o}dd, \textbf{b}izarre, table below) to pick $\ge$, $=$, or $\le$ for its dual constraint:
+    \begin{itemize}
+        \item $x_1 \ge 0$ (sensible for $\max$) $\implies \ge c_1$
+        \item $x_2 \le 0$ (bizarre for $\max$) $\implies \le c_2$
+        \item $x_3 \text{ free}$ (odd) $\implies = c_3$
+    \end{itemize}
+
+    \smallskip
+    \noindent\fcolorbox{gray!25}{gray!4}{%
+    \parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{%
+    \[
+    \begin{aligned}
+    \min \quad & b_1 y_1 + b_2 y_2 + b_3 y_3 \\[3pt]
+    \text{s.t.} \quad 
+    & {\color{gray}[\;\cdots\;]} \ge \colorbox{blue!10}{$c_1$} \\
+    & {\color{gray}[\;\cdots\;]} \le \colorbox{orange!12}{$c_2$} \\
+    & {\color{gray}[\;\cdots\;]} = \colorbox{teal!10}{$c_3$}
+    \end{aligned}
+    \]
+    }}
+
+    \item \textbf{read coefficients vertically:} label the primal rows with {\color{gray}$y_1, y_2, y_3$}, then look at the primal variable columns and read them \textbf{vertically} (top to bottom) to fill in the left-hand side of each dual constraint:
+
+    \smallskip
+    \noindent\fcolorbox{gray!25}{gray!4}{%
+    \parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{%
+    \[
+    \begin{aligned}
+& \colorbox{blue!10}{$a_{11}$} x_1 + \colorbox{orange!12}{$a_{12}$} x_2 + \colorbox{teal!10}{$a_{13}$} x_3 \le b_1 \qquad {\color{gray}\leftarrow y_1} \\
+& \colorbox{blue!10}{$a_{21}$} x_1 + \colorbox{orange!12}{$a_{22}$} x_2 + \colorbox{teal!10}{$a_{23}$} x_3 \ge b_2 \qquad {\color{gray}\leftarrow y_2} \\
+& \colorbox{blue!10}{$a_{31}$} x_1 + \colorbox{orange!12}{$a_{32}$} x_2 + \colorbox{teal!10}{$a_{33}$} x_3 = b_3 \qquad {\color{gray}\leftarrow y_3} \\[20pt]
+    \min \quad & b_1 y_1 + b_2 y_2 + b_3 y_3 \\[3pt]
+    \text{s.t.} \quad 
+    & \colorbox{blue!10}{$a_{11}$} y_1 + \colorbox{blue!10}{$a_{21}$} y_2 + \colorbox{blue!10}{$a_{31}$} y_3 \ge \colorbox{blue!10}{$c_1$} \\
+    & \colorbox{orange!12}{$a_{12}$} y_1 + \colorbox{orange!12}{$a_{22}$} y_2 + \colorbox{orange!12}{$a_{32}$} y_3 \le \colorbox{orange!12}{$c_2$} \\
+    & \colorbox{teal!10}{$a_{13}$} y_1 + \colorbox{teal!10}{$a_{23}$} y_2 + \colorbox{teal!10}{$a_{33}$} y_3 = \colorbox{teal!10}{$c_3$} \\[3pt]
+    & {\color{gray}y_1\,?, \quad y_2\,?, \quad y_3\,?}
+    \end{aligned}
+    \]
+    }}
+\subitem (if a coefficient for a $x_{i}$ is missing (is $0$), remember to "shift" the columns !!)
+
+    \item \textbf{dual variable signs via SOB (check primal constraints):} look at the $\le, \ge, =$ signs of the primal constraints and follow \textbf{SOB} again to see whether each $y_i$ is $\ge 0$, $\le 0$, or unconstrained (free):
+    \begin{itemize}
+        \item row 1 ($\le b_1$, sensible for $\max$) $\implies y_1 \ge 0$
+        \item row 2 ($\ge b_2$, bizarre for $\max$) $\implies y_2 \le 0$
+        \item row 3 ($= b_3$, odd) $\implies y_3 \text{ free (unrestricted)}$
+    \end{itemize}
+\end{enumerate}
+
+\noindent our finished \textbf{Dual Problem} is:
+
+\noindent\fcolorbox{blue!35}{blue!5}{%
+\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{%
+\[
+\begin{aligned}
+\min \quad & b_1 y_1 + b_2 y_2 + b_3 y_3 \\[4pt]
+\text{s.t.} \quad 
+& \colorbox{blue!10}{$a_{11}$} y_1 + \colorbox{blue!10}{$a_{21}$} y_2 + \colorbox{blue!10}{$a_{31}$} y_3 \ge \colorbox{blue!10}{$c_1$} \qquad {\color{gray}\leftarrow x_1 \ge 0} \\
+& \colorbox{orange!12}{$a_{12}$} y_1 + \colorbox{orange!12}{$a_{22}$} y_2 + \colorbox{orange!12}{$a_{32}$} y_3 \le \colorbox{orange!12}{$c_2$} \qquad {\color{gray}\leftarrow x_2 \le 0} \\
+& \colorbox{teal!10}{$a_{13}$} y_1 + \colorbox{teal!10}{$a_{23}$} y_2 + \colorbox{teal!10}{$a_{33}$} y_3 = \colorbox{teal!10}{$c_3$} \qquad {\color{gray}\leftarrow x_3 \text{ free}} \\[4pt]
+& y_1 \ge 0, \quad y_2 \le 0, \quad y_3 \text{ free}
+\end{aligned}
+\]
+}}
+\noindent
+\begin{minipage}[t]{0.485\linewidth}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\linewidth}{@{} l X @{$\;\longrightarrow\;$} X @{}}
+\toprule
+\multicolumn{3}{>{\columncolor{blue!10}}c}{\textbf{Max Primal $\longrightarrow$ Min Dual}} \\
+\midrule
+\textbf{SOB} & \textbf{Primal} & \textbf{Dual} \\
+\midrule
+\rowcolor{green!8}
+\textbf{S} & Constr. $\le$  & Var. $\ge 0$ \\
+\textbf{O} & Constr. $=$    & Var. free \\
+\rowcolor{red!6}
+\textbf{B} & Constr. $\ge$  & Var. $\le 0$ \\
+\addlinespace[4pt]
+\rowcolor{green!8}
+\textbf{S} & Var. $\ge 0$   & Constr. $\ge$ \\
+\textbf{O} & Var. free      & Constr. $=$ \\
+\rowcolor{red!6}
+\textbf{B} & Var. $\le 0$   & Constr. $\le$ \\
+\bottomrule
+\end{tabularx}
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{0.485\linewidth}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\linewidth}{@{} l X @{$\;\longrightarrow\;$} X @{}}
+\toprule
+\multicolumn{3}{>{\columncolor{orange!12}}c}{\textbf{Min Primal $\longrightarrow$ Max Dual}} \\
+\midrule
+\textbf{SOB} & \textbf{Primal} & \textbf{Dual} \\
+\midrule
+\rowcolor{green!8}
+\textbf{S} & Constr. $\ge$  & Var. $\ge 0$ \\
+\textbf{O} & Constr. $=$    & Var. free \\
+\rowcolor{red!6}
+\textbf{B} & Constr. $\le$  & Var. $\le 0$ \\
+\addlinespace[4pt]
+\rowcolor{green!8}
+\textbf{S} & Var. $\ge 0$   & Constr. $\le$ \\
+\textbf{O} & Var. free      & Constr. $=$ \\
+\rowcolor{red!6}
+\textbf{B} & Var. $\le 0$   & Constr. $\ge$ \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+
+\vspace{8pt}
+
+\textbf{why are they "sensible":}
+\begin{itemize}\setlength{\itemsep}{3pt}\setlength{\parskip}{0pt}
+    \item \textbf{maximization ($\le$ = ceilings):} without upper caps ($\le$), profit could scale infinitely (it would make no sense)
+    \item \textbf{minimization ($\ge$ = minimum quotas):} when minimizing cost or waste, doing nothing ($x = 0$, $\text{cost} = 0$) is trivially optimal unless we add lower-bound requirements (customer demand, nutrition, safety thresholds) 
+    \item \textbf{variables ($x_j \ge 0$ = physical quantities):} decision quantities (units produced, hours worked, shipments) can't be negative
+\end{itemize}
  
 \end{document}
 
